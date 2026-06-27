@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Location {
+  id       String       @id @default(cuid())
+  type     String
+  parentId String?
+  parent   Location?    @relation("LocationHierarchy", fields: [parentId], references: [id])
+  children Location[]   @relation("LocationHierarchy")
+  nameDe   String
+  nameEn   String
+  nameTh   String?
+  slug     String       @unique
+
+  sources          Source[]
+  sourceGuesses    Source[] @relation("LocationGuess")
+  ideas            Idea[]
+  articles         Article[]
+  templates        PromptTemplate[] @relation("LocationTemplates")
+}
+
+model Source {
+  id               String   @id @default(cuid())
+  platform         String
+  url              String
+  urlNormalized    String
+  rawText          String?
+  rawTextHash      String?
+  capturedAt       DateTime @default(now())
+  originalPostedAt DateTime?
+  status           String   @default("new")
+
+  originSourceId String?
+  originSource   Source?  @relation("SourceTree", fields: [originSourceId], references: [id])
+  derivedSources Source[] @relation("SourceTree")
+
+  mergedIntoId String?
+  mergedInto   Source?  @relation("SourceMerge", fields: [mergedIntoId], references: [id])
+  mergedFrom   Source[] @relation("SourceMerge")
+
+  locationGuessId String?
+  locationGuess   Location? @relation("LocationGuess", fields: [locationGuessId], references: [id])
+
+  locationId String?
+  location   Location? @relation(fields: [locationId], references: [id])
+
+  ideaSources IdeaSource[]
+}
+
+model Idea {
+  id                String   @id @default(cuid())
+  title             String
+  category          String
+  summary           String
+  researchNotes     String?
+  locationId        String
+  location          Location @relation(fields: [locationId], references: [id])
+  confirmationCount Int      @default(1)
+  credibility       String   @default("niedrig")
+  status            String   @default("idea")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  ideaSources IdeaSource[]
+  articles    Article[]
+}
+
+model IdeaSource {
+  ideaId   String
+  sourceId String
+  idea     Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  source   Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@id([ideaId, sourceId])
+}
+
+model Article {
+  id               String   @id @default(cuid())
+  ideaId           String
+  idea             Idea     @relation(fields: [ideaId], references: [id])
+  locationId       String
+  location         Location @relation(fields: [locationId], references: [id])
+  title            String
+  bodyMarkdown     String   @default("")
+  generationSource String   @default("human")
+  publishStatus    String   @default("draft")
+  publishedUrl     String?
+  exportedAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  draftGenerations ArticleDraftGeneration[]
+}
+
+model ArticleDraftGeneration {
+  id               String          @id @default(cuid())
+  articleId        String
+  article          Article         @relation(fields: [articleId], references: [id])
+  promptTemplateId String?
+  promptTemplate   PromptTemplate? @relation(fields: [promptTemplateId], references: [id])
+  ideaSnapshot     String
+  promptUsed       String
+  modelOutput      String
+  createdAt        DateTime        @default(now())
+}
+
+model PromptTemplate {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  template    String
+  isDefault   Boolean   @default(false)
+  locationId  String?
+  location    Location? @relation("LocationTemplates", fields: [locationId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  draftGenerations ArticleDraftGeneration[]
+}

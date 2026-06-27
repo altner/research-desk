@@ -1,0 +1,330 @@
+"use client";
+
+import { use, useEffect, useState, useRef } from "react";
+import { LocationCrumb, CredibilityBadge, Button } from "@/components/ui";
+import type { Article, Location, Credibility } from "@/lib/types";
+
+type PublishStatus = "draft" | "in_review" | "published";
+
+const STATUS_TABS: { value: PublishStatus; label: string }[] = [
+  { value: "draft", label: "DRAFT" },
+  { value: "in_review", label: "IN REVIEW" },
+  { value: "published", label: "PUBLISHED" },
+];
+
+export default function ArtikelEditorPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [article, setArticle] = useState<Article | null>(null);
+  const [body, setBody] = useState("");
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportMsg, setExportMsg] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    fetch(`/api/articles/${id}`)
+      .then((r) => r.json())
+      .then((a) => { setArticle(a); setBody(a.bodyMarkdown); });
+  }, [id]);
+
+  const save = async () => {
+    setSaving(true);
+    await fetch(`/api/articles/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bodyMarkdown: body }),
+    });
+    setSaving(false);
+    setDirty(false);
+  };
+
+  const setStatus = async (status: PublishStatus) => {
+    const res = await fetch(`/api/articles/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ publishStatus: status }),
+    });
+    const updated = await res.json();
+    setArticle((prev) => prev ? { ...prev, publishStatus: updated.publishStatus } : prev);
+  };
+
+  const doExport = async () => {
+    setExporting(true);
+    setExportMsg("");
+    const res = await fetch(`/api/articles/${id}/export`, { method: "POST" });
+    const d = await res.json();
+    setExporting(false);
+    if (res.ok) setExportMsg(`✓ Exported as ${d.slug}.json`);
+    else setExportMsg(`Error: ${d.error}`);
+  };
+
+  const insertFormat = (before: string, after = "") => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = body.slice(start, end);
+    const next = body.slice(0, start) + before + selected + after + body.slice(end);
+    setBody(next);
+    setDirty(true);
+    setTimeout(() => {
+      ta.selectionStart = start + before.length;
+      ta.selectionEnd = end + before.length;
+      ta.focus();
+    }, 0);
+  };
+
+  if (!article) return <div style={{ padding: 32, color: "#A89C8E" }}>Loading...</div>;
+
+  const isAiDraft = article.generationSource === "ai_draft_human_edited"
+    && article.publishStatus !== "published";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+      {/* Header */}
+      <div style={{
+        padding: "0 16px", height: 52, display: "flex", alignItems: "center", gap: 12,
+        borderBottom: "1px solid #D8CFBF", background: "#EBE5D9", flexShrink: 0,
+      }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#1F1A13", truncate: true } as React.CSSProperties}>
+            {article.title}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: "#A89C8E" }}>
+            {article.location && <LocationCrumb location={article.location as Location} />}
+            <span>·</span>
+            <span>{(article as Article & { idea?: { confirmationCount: number; credibility: string } }).idea?.confirmationCount ?? 0} sources</span>
+            <span>·</span>
+            <span>Last edited {new Date(article.updatedAt).toLocaleDateString("en-US")}</span>
+          </div>
+        </div>
+
+        {/* Status tabs */}
+        <div style={{ display: "flex", border: "1px solid #D8CFBF", borderRadius: 6, overflow: "hidden" }}>
+          {STATUS_TABS.map((tab) => (
+            <button key={tab.value} onClick={() => setStatus(tab.value)}
+              style={{
+                padding: "5px 12px", border: "none", cursor: "pointer",
+                fontSize: 10, fontWeight: 700, letterSpacing: "0.07em",
+                background: article.publishStatus === tab.value ? "#1F1A13" : "transparent",
+                color: article.publishStatus === tab.value ? "#fff" : "#7A6E61",
+                borderRight: tab.value !== "published" ? "1px solid #D8CFBF" : "none",
+              }}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {article.publishStatus === "published" && (
+          <Button variant="secondary" size="sm" onClick={doExport} disabled={exporting}>
+            {exporting ? "Exporting…" : "Export ↗"}
+          </Button>
+        )}
+      </div>
+
+      {/* KI-Entwurf Warning */}
+      {isAiDraft && (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "8px 16px", background: "#FFF3DC", borderBottom: "1px solid #F0D8A0",
+        }}>
+          <span style={{ fontSize: 12, color: "#7A5C1E" }}>
+            <strong>AI DRAFT</strong> — Verify all information before publishing. Do not treat as final.
+          </span>
+          <button onClick={() => setArticle((a) => a ? { ...a, generationSource: "human" } : a)}
+            style={{ fontSize: 11, color: "#7A5C1E", background: "none", border: "none", cursor: "pointer",
+              textDecoration: "underline" }}>
+            Got it
+          </button>
+        </div>
+      )}
+
+      {exportMsg && (
+        <div style={{
+          padding: "8px 16px", background: "#E8F5F4", borderBottom: "1px solid #B8E0DC",
+          fontSize: 12, color: "#1E5C4A",
+        }}>{exportMsg}</div>
+      )}
+
+      {/* Editor + Preview */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        {/* Editor */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", borderRight: "1px solid #D8CFBF" }}>
+          {/* Toolbar */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 2, padding: "6px 12px",
+            borderBottom: "1px solid #E5DDD0", background: "#F9F5EE", flexShrink: 0,
+          }}>
+            {[
+              { label: "B", action: () => insertFormat("**", "**"), title: "Bold" },
+              { label: "I", action: () => insertFormat("*", "*"), title: "Italic" },
+              { label: "H1", action: () => insertFormat("# "), title: "Heading 1" },
+              { label: "H2", action: () => insertFormat("## "), title: "Heading 2" },
+              { label: "H3", action: () => insertFormat("### "), title: "Heading 3" },
+            ].map((t) => (
+              <button key={t.label} onClick={t.action} title={t.title}
+                style={{
+                  padding: "3px 7px", fontSize: t.label.startsWith("H") ? 10 : 12,
+                  fontWeight: 700, border: "none", background: "none", cursor: "pointer",
+                  color: "#7A6E61", borderRadius: 4,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#E5DDD0")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "none")}>
+                {t.label}
+              </button>
+            ))}
+            <div style={{ width: 1, height: 18, background: "#D8CFBF", margin: "0 4px" }} />
+            <button onClick={() => insertFormat("[", "](url)")} title="Insert link"
+              style={{ padding: "3px 7px", border: "none", background: "none", cursor: "pointer",
+                color: "#7A6E61", borderRadius: 4, fontSize: 12 }}>
+              🔗
+            </button>
+            <button onClick={() => insertFormat("\n- ")} title="List"
+              style={{ padding: "3px 7px", border: "none", background: "none", cursor: "pointer",
+                color: "#7A6E61", borderRadius: 4, fontSize: 12 }}>
+              ☰
+            </button>
+            <div style={{ flex: 1 }} />
+            <span style={{ fontSize: 10, color: "#A89C8E", marginRight: 4 }}>Markdown</span>
+          </div>
+
+          {/* Textarea */}
+          <textarea
+            ref={textareaRef}
+            value={body}
+            onChange={(e) => { setBody(e.target.value); setDirty(true); }}
+            style={{
+              flex: 1, padding: "16px 16px", fontSize: 13, lineHeight: 1.7,
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+              border: "none", outline: "none", resize: "none",
+              background: "#F9F5EE", color: "#1F1A13",
+            }}
+          />
+
+          {/* Save bar */}
+          {dirty && (
+            <div style={{
+              padding: "8px 12px", display: "flex", gap: 8, alignItems: "center",
+              background: "#F4EFE6", borderTop: "1px solid #D8CFBF", flexShrink: 0,
+            }}>
+              <Button onClick={save} disabled={saving} size="sm">
+                {saving ? "Saving…" : "Save changes"}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => {
+                setBody(article.bodyMarkdown);
+                setDirty(false);
+              }}>Discard</Button>
+            </div>
+          )}
+        </div>
+
+        {/* Preview */}
+        <div style={{ flex: 1, overflow: "auto", background: "#FDFAF6" }}>
+          <div style={{ padding: "16px 24px 32px" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#A89C8E", letterSpacing: "0.1em",
+              textTransform: "uppercase", marginBottom: 16, textAlign: "center" }}>
+              Preview
+            </div>
+            <MarkdownPreview markdown={body} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MarkdownPreview({ markdown }: { markdown: string }) {
+  const lines = markdown.split("\n");
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.startsWith("# ")) {
+      elements.push(<h1 key={i} style={{ fontSize: 24, fontWeight: 800, color: "#1F1A13", marginBottom: 6, marginTop: 8 }}>
+        {inlineRender(line.slice(2))}
+      </h1>);
+    } else if (line.startsWith("## ")) {
+      elements.push(<h2 key={i} style={{ fontSize: 17, fontWeight: 700, color: "#1F1A13", marginBottom: 6, marginTop: 20,
+        borderLeft: "3px solid #C8892E", paddingLeft: 10 }}>
+        {inlineRender(line.slice(3))}
+      </h2>);
+    } else if (line.startsWith("### ")) {
+      elements.push(<h3 key={i} style={{ fontSize: 14, fontWeight: 700, color: "#1F1A13", marginBottom: 4, marginTop: 16 }}>
+        {inlineRender(line.slice(4))}
+      </h3>);
+    } else if (line.startsWith("- ") || line.startsWith("* ")) {
+      const items: string[] = [];
+      while (i < lines.length && (lines[i].startsWith("- ") || lines[i].startsWith("* "))) {
+        items.push(lines[i].slice(2));
+        i++;
+      }
+      elements.push(
+        <ul key={`ul-${i}`} style={{ marginBottom: 12, paddingLeft: 0, listStyle: "none" }}>
+          {items.map((item, j) => (
+            <li key={j} style={{ display: "flex", gap: 8, marginBottom: 4, fontSize: 14, color: "#1F1A13", lineHeight: 1.6 }}>
+              <span style={{ color: "#C8892E", flexShrink: 0 }}>→</span>
+              {inlineRender(item)}
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    } else if (line.startsWith("---")) {
+      elements.push(<hr key={i} style={{ border: "none", borderTop: "1px solid #E0D8C8", margin: "16px 0" }} />);
+    } else if (line.trim() === "") {
+      elements.push(<div key={i} style={{ height: 8 }} />);
+    } else if (line.startsWith("*") && line.endsWith("*") && !line.startsWith("**")) {
+      elements.push(<p key={i} style={{ fontSize: 12, color: "#A89C8E", fontStyle: "italic", marginBottom: 8 }}>
+        {inlineRender(line.slice(1, -1))}
+      </p>);
+    } else {
+      elements.push(<p key={i} style={{ fontSize: 14, color: "#1F1A13", lineHeight: 1.7, marginBottom: 10 }}>
+        {inlineRender(line)}
+      </p>);
+    }
+    i++;
+  }
+
+  return <div>{elements}</div>;
+}
+
+function inlineRender(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+
+  while (remaining) {
+    const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
+    const italicMatch = remaining.match(/\*(.+?)\*/);
+    const linkMatch = remaining.match(/\[(.+?)\]\((.+?)\)/);
+    const checkMatch = remaining.match(/\[PRÜFEN:([^\]]+)\]/);
+
+    const matches = [boldMatch, italicMatch, linkMatch, checkMatch]
+      .filter(Boolean)
+      .sort((a, b) => (a!.index ?? 0) - (b!.index ?? 0));
+
+    if (!matches.length) {
+      parts.push(remaining);
+      break;
+    }
+
+    const first = matches[0]!;
+    if (first.index! > 0) parts.push(remaining.slice(0, first.index!));
+
+    if (first === boldMatch) {
+      parts.push(<strong key={key++} style={{ fontWeight: 700 }}>{first[1]}</strong>);
+    } else if (first === italicMatch) {
+      parts.push(<em key={key++}>{first[1]}</em>);
+    } else if (first === linkMatch) {
+      parts.push(<a key={key++} href={first[2]} target="_blank" rel="noreferrer"
+        style={{ color: "#C8892E" }}>{first[1]}</a>);
+    } else if (first === checkMatch) {
+      parts.push(<mark key={key++} style={{ background: "#FFF3DC", color: "#C8892E",
+        padding: "0 3px", borderRadius: 2 }}>[PRÜFEN:{first[1]}]</mark>);
+    }
+
+    remaining = remaining.slice(first.index! + first[0].length);
+  }
+
+  return parts.length === 1 ? parts[0] : <>{parts}</>;
+}

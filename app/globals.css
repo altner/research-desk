@@ -1,26 +1,43 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Design tokens from Thailand-Recherche-Tool */
+  --color-sand:        #EBE5D9;
+  --color-sand-light:  #F4EFE6;
+  --color-cream:       #FDFAF6;
+  --color-border:      #D8CFBF;
+  --color-border-dark: #C8BFB0;
+  --color-navy:        #17263A;
+  --color-navy-light:  #1E3250;
+  --color-amber:       #C8892E;
+  --color-amber-light: #D9A04A;
+  --color-amber-bg:    #FFF3DC;
+  --color-teal:        #2D7A77;
+  --color-teal-bg:     #E8F5F4;
+  --color-red:         #C0392B;
+  --color-red-bg:      #FDECEA;
+  --color-text:        #1F1A13;
+  --color-text-muted:  #7A6E61;
+  --color-text-faint:  #A89C8E;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-sand);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-dark); border-radius: 3px; }
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
 }
