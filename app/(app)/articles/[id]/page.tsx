@@ -76,7 +76,7 @@ export default function ArtikelEditorPage({ params }: { params: Promise<{ id: st
   if (!article) return <div style={{ padding: 32, color: "#A89C8E" }}>Loading...</div>;
 
   const isAiDraft = article.generationSource === "ai_draft_human_edited"
-    && article.publishStatus !== "published";
+    && article.publishStatus === "draft";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
