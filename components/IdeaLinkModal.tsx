@@ -8,8 +8,8 @@ import LocationPicker from "@/components/LocationPicker";
 import { useApiFetch } from "@/lib/use-api-fetch";
 
 const CATEGORIES: IdeaCategory[] = [
-  "geheimtipp", "warnung_abzocke", "erwartung_vs_realitaet", "food_tipp",
-  "stimmungsbild", "kultureller_fauxpas", "praktischer_tipp", "sonstige",
+  "hidden_gem", "warning", "expectation_vs_reality", "food_drink",
+  "atmosphere", "cultural_note", "practical_tip", "other",
 ];
 
 export default function IdeaLinkModal({
@@ -20,7 +20,7 @@ export default function IdeaLinkModal({
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [selectedIdeaId, setSelectedIdeaId] = useState("");
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<IdeaCategory>("geheimtipp");
+  const [category, setCategory] = useState<IdeaCategory>("hidden_gem");
   const [summary, setSummary] = useState("");
   const [locationId, setLocationId] = useState("");
   const [locations, setLocations] = useState<Location[]>([]);

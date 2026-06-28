@@ -43,9 +43,9 @@ export function StatusBadge({ status }: { status: SourceStatus }) {
 }
 
 const CATEGORY_COLORS_STATIC: Record<string, string> = {
-  geheimtipp: "#2D7A77", warnung_abzocke: "#C8892E", erwartung_vs_realitaet: "#7B5EA7",
-  food_tipp: "#2D7A44", stimmungsbild: "#1E5C8A", kultureller_fauxpas: "#C05C2B",
-  praktischer_tipp: "#1E5C8A", sonstige: "#7A6E61",
+  hidden_gem: "#2D7A77", warning: "#C8892E", expectation_vs_reality: "#7B5EA7",
+  food_drink: "#2D7A44", atmosphere: "#1E5C8A", cultural_note: "#C05C2B",
+  practical_tip: "#1E5C8A", other: "#7A6E61",
 };
 
 export function CategoryBadge({ category, label, color }: {

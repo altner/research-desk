@@ -49,7 +49,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     slug: buildSlug(article.title),
     title: article.title,
     bodyMarkdown: article.bodyMarkdown,
-    category: article.idea?.category ?? "sonstige",
+    category: article.idea?.category ?? "other",
     location: buildLocationPath(article.location as Parameters<typeof buildLocationPath>[0]),
     publishedAt: new Date().toISOString(),
   };

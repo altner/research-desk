@@ -10,8 +10,8 @@ import { detectPlatform } from "@/lib/url-utils";
 
 const PLATFORMS: Platform[] = ["reddit", "tiktok", "instagram", "facebook", "youtube", "forum", "other"];
 const CATEGORIES: IdeaCategory[] = [
-  "geheimtipp", "warnung_abzocke", "erwartung_vs_realitaet", "food_tipp",
-  "stimmungsbild", "kultureller_fauxpas", "praktischer_tipp", "sonstige",
+  "hidden_gem", "warning", "expectation_vs_reality", "food_drink",
+  "atmosphere", "cultural_note", "practical_tip", "other",
 ];
 
 export default function CaptureModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
@@ -24,7 +24,7 @@ export default function CaptureModal({ onClose, onSaved }: { onClose: () => void
   const [originSourceId, setOriginSourceId] = useState("");
   const [createIdea, setCreateIdea] = useState(false);
   const [ideaTitle, setIdeaTitle] = useState("");
-  const [ideaCategory, setIdeaCategory] = useState<IdeaCategory>("geheimtipp");
+  const [ideaCategory, setIdeaCategory] = useState<IdeaCategory>("hidden_gem");
   const [locations, setLocations] = useState<Location[]>([]);
   const [saving, setSaving] = useState(false);
   const [fetchingTitle, setFetchingTitle] = useState(false);

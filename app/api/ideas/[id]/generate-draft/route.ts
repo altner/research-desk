@@ -4,14 +4,14 @@ import { readIdeaForPrompt } from "@/lib/idea-reader";
 import Anthropic from "@anthropic-ai/sdk";
 
 const CATEGORY_EN: Record<string, string> = {
-  geheimtipp: "Hidden Gem",
-  warnung_abzocke: "Warning / Risk",
-  erwartung_vs_realitaet: "Expectation vs. Reality",
-  food_tipp: "Food & Drink",
-  stimmungsbild: "Atmosphere",
-  kultureller_fauxpas: "Cultural Note",
-  praktischer_tipp: "Practical Tip",
-  sonstige: "Other",
+  hidden_gem: "Hidden Gem",
+  warning: "Warning / Risk",
+  expectation_vs_reality: "Expectation vs. Reality",
+  food_drink: "Food & Drink",
+  atmosphere: "Atmosphere",
+  cultural_note: "Cultural Note",
+  practical_tip: "Practical Tip",
+  other: "Other",
 };
 
 function buildLocationPath(idea: Awaited<ReturnType<typeof readIdeaForPrompt>>): string {

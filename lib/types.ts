@@ -1,14 +1,14 @@
 export type Platform = "reddit" | "tiktok" | "instagram" | "facebook" | "youtube" | "forum" | "other";
 export type SourceStatus = "new" | "reviewed" | "linked_to_idea" | "discarded" | "merged";
 export type IdeaCategory =
-  | "geheimtipp"
-  | "warnung_abzocke"
-  | "erwartung_vs_realitaet"
-  | "food_tipp"
-  | "stimmungsbild"
-  | "kultureller_fauxpas"
-  | "praktischer_tipp"
-  | "sonstige";
+  | "hidden_gem"
+  | "warning"
+  | "expectation_vs_reality"
+  | "food_drink"
+  | "atmosphere"
+  | "cultural_note"
+  | "practical_tip"
+  | "other";
 export type Credibility = "niedrig" | "mittel" | "hoch" | "bestaetigt";
 export type IdeaStatus =
   | "idea"
@@ -166,14 +166,14 @@ export const STATUS_LABELS: Record<SourceStatus, string> = {
 };
 
 export const CATEGORY_LABELS: Record<IdeaCategory, string> = {
-  geheimtipp: "Hidden Gem",
-  warnung_abzocke: "Warning / Risk",
-  erwartung_vs_realitaet: "Expectation vs. Reality",
-  food_tipp: "Food & Drink",
-  stimmungsbild: "Atmosphere",
-  kultureller_fauxpas: "Cultural Note",
-  praktischer_tipp: "Practical Tip",
-  sonstige: "Other",
+  hidden_gem: "Hidden Gem",
+  warning: "Warning / Risk",
+  expectation_vs_reality: "Expectation vs. Reality",
+  food_drink: "Food & Drink",
+  atmosphere: "Atmosphere",
+  cultural_note: "Cultural Note",
+  practical_tip: "Practical Tip",
+  other: "Other",
 };
 
 export const CREDIBILITY_LABELS: Record<Credibility, string> = {

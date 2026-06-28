@@ -822,7 +822,7 @@ function CategoryForm({ initial, onSave, onCancel }: {
           <div>
             <label style={labelStyle}>Key *</label>
             <input value={key} onChange={(e) => setKey(e.target.value)} style={inputStyle}
-              placeholder="e.g. geheimtipp" />
+              placeholder="e.g. hidden_gem" />
           </div>
         )}
         <div style={initial ? { gridColumn: "1 / 3" } : {}}>
