@@ -24,6 +24,14 @@
 - [ ] Ordner-Hierarchie (Unterordner verschachteln)
 - [ ] Automatische Duplikat-Erkennung beim Import verbessern
 
+## Medien / Fotos
+
+- [ ] MinIO als selbst gehosteten S3-kompatiblen Storage einrichten (Docker auf VPS)
+- [ ] `@aws-sdk/client-s3` Integration: Upload-Route `/api/media/upload` pro Projekt
+- [ ] Einfache Medienbibliothek im UI: Upload → Vorschau → URL in Zwischenablage kopieren
+- [ ] URL direkt in Markdown-Editor einfügen (Insert Image Button)
+- [ ] Optional: Cloudflare R2 als Alternative (kein eigener Server nötig, globales CDN)
+
 ## Ideen / Nice-to-have
 
 - [ ] Bulk-Import von Sources (CSV / OPML)
