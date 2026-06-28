@@ -12,11 +12,11 @@ export type IdeaCategory =
 export type Credibility = "niedrig" | "mittel" | "hoch" | "bestaetigt";
 export type IdeaStatus =
   | "idea"
-  | "in_recherche"
-  | "im_entwurf"
+  | "researching"
+  | "drafting"
   | "review"
-  | "veroeffentlicht"
-  | "verworfen";
+  | "published"
+  | "archived";
 export type PublishStatus = "draft" | "in_review" | "published";
 export type LocationType =
   | "country" | "region" | "province" | "district" | "place"
@@ -185,17 +185,17 @@ export const CREDIBILITY_LABELS: Record<Credibility, string> = {
 
 export const IDEA_STATUS_LABELS: Record<IdeaStatus, string> = {
   idea: "IDEA",
-  in_recherche: "RESEARCHING",
-  im_entwurf: "DRAFTING",
+  researching: "RESEARCHING",
+  drafting: "DRAFTING",
   review: "REVIEW",
-  veroeffentlicht: "PUBLISHED",
-  verworfen: "ARCHIVED",
+  published: "PUBLISHED",
+  archived: "ARCHIVED",
 };
 
 export const IDEA_STATUS_COLUMNS: IdeaStatus[] = [
   "idea",
-  "in_recherche",
-  "im_entwurf",
+  "researching",
+  "drafting",
   "review",
-  "veroeffentlicht",
+  "published",
 ];

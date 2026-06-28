@@ -42,7 +42,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   // Sync idea status when article is published
   if (publishStatus === "published") {
-    await prisma.idea.update({ where: { id: article.ideaId }, data: { status: "veroeffentlicht" } });
+    await prisma.idea.update({ where: { id: article.ideaId }, data: { status: "published" } });
   } else if (publishStatus === "in_review") {
     await prisma.idea.update({ where: { id: article.ideaId }, data: { status: "review" } });
   }

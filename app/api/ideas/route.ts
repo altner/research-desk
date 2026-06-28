@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
   const where: Record<string, unknown> = {};
   if (projectId) where.projectId = projectId;
-  if (status) where.status = { not: "verworfen", ...(status !== "all" && { equals: status }) };
+  if (status) where.status = { not: "archived", ...(status !== "all" && { equals: status }) };
   if (category) where.category = category;
   if (locationId) where.locationId = locationId;
 

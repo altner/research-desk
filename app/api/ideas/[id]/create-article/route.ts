@@ -28,7 +28,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     },
   });
 
-  await prisma.idea.update({ where: { id: ideaId }, data: { status: "im_entwurf" } });
+  await prisma.idea.update({ where: { id: ideaId }, data: { status: "drafting" } });
 
   return NextResponse.json({ article });
 }

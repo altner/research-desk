@@ -10,11 +10,11 @@ import { useApiFetch } from "@/lib/use-api-fetch";
 
 const STATUS_COLORS: Record<IdeaStatus, string> = {
   idea: "#A89C8E",
-  in_recherche: "#1E5C8A",
-  im_entwurf: "#7B5EA7",
+  researching: "#1E5C8A",
+  drafting: "#7B5EA7",
   review: "#C8892E",
-  veroeffentlicht: "#2D7A77",
-  verworfen: "#C0392B",
+  published: "#2D7A77",
+  archived: "#C0392B",
 };
 
 export default function IdeasPage() {
@@ -28,7 +28,7 @@ export default function IdeasPage() {
     setLoading(true);
     const res = await apiFetch("/api/ideas");
     const data = await res.json();
-    setIdeas(data.filter((i: Idea) => i.status !== "verworfen"));
+    setIdeas(data.filter((i: Idea) => i.status !== "archived"));
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
