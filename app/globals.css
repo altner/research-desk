@@ -1,30 +1,61 @@
 @import "tailwindcss";
 
 @theme {
-  /* Design tokens from Thailand-Recherche-Tool */
-  --color-sand:        #EBE5D9;
-  --color-sand-light:  #F4EFE6;
-  --color-cream:       #FDFAF6;
-  --color-border:      #D8CFBF;
-  --color-border-dark: #C8BFB0;
-  --color-navy:        #17263A;
-  --color-navy-light:  #1E3250;
-  --color-amber:       #C8892E;
-  --color-amber-light: #D9A04A;
-  --color-amber-bg:    #FFF3DC;
-  --color-teal:        #2D7A77;
-  --color-teal-bg:     #E8F5F4;
-  --color-red:         #C0392B;
-  --color-red-bg:      #FDECEA;
-  --color-text:        #1F1A13;
-  --color-text-muted:  #7A6E61;
-  --color-text-faint:  #A89C8E;
+  /* ── Primitive Palette ──────────────────────────────
+     Raw values. Never use these directly in components.
+     Only referenced by semantic tokens below.          */
+  --palette-sand:         #EBE5D9;
+  --palette-sand-light:   #F4EFE6;
+  --palette-cream:        #FDFAF6;
+  --palette-navy:         #17263A;
+  --palette-navy-light:   #1E3250;
+  --palette-amber:        #C8892E;
+  --palette-amber-light:  #D9A04A;
+  --palette-amber-subtle: #FFF3DC;
+  --palette-teal:         #2D7A77;
+  --palette-teal-subtle:  #E8F5F4;
+  --palette-red:          #C0392B;
+  --palette-red-subtle:   #FDECEA;
+  --palette-ink:          #1F1A13;
+  --palette-stone:        #7A6E61;
+  --palette-dust:         #A89C8E;
+  --palette-bone:         #D8CFBF;
+  --palette-bone-dark:    #C8BFB0;
+
+  /* ── Semantic Tokens ────────────────────────────────
+     Use these in components. Name = role, not color.   */
+
+  /* Surfaces */
+  --color-surface:        var(--palette-sand);
+  --color-card:           var(--palette-sand-light);
+  --color-overlay:        var(--palette-cream);
+  --color-sidebar:        var(--palette-navy);
+
+  /* Text */
+  --color-text:           var(--palette-ink);
+  --color-text-muted:     var(--palette-stone);
+  --color-text-faint:     var(--palette-dust);
+
+  /* Borders */
+  --color-border:         var(--palette-bone);
+  --color-border-strong:  var(--palette-bone-dark);
+
+  /* Primary action */
+  --color-action:         var(--palette-amber);
+  --color-action-hover:   var(--palette-amber-light);
+  --color-action-subtle:  var(--palette-amber-subtle);
+
+  /* Danger */
+  --color-danger:         var(--palette-red);
+  --color-danger-subtle:  var(--palette-red-subtle);
+
+  /* Accent (status badges, links) */
+  --color-accent:         var(--palette-teal);
+  --color-accent-subtle:  var(--palette-teal-subtle);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
 body {
-  background: var(--color-sand);
+  background: var(--color-surface);
   color: var(--color-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
@@ -35,6 +66,18 @@ body {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--color-border-dark); border-radius: 3px; }
+
+/* Markdown article preview */
+.prose-article h1 { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+.prose-article h2 { font-size: 13px; font-weight: 700; margin-top: 16px; margin-bottom: 6px; }
+.prose-article h3 { font-size: 12px; font-weight: 700; margin-top: 12px; margin-bottom: 4px; }
+.prose-article p  { margin-bottom: 10px; }
+.prose-article ul, .prose-article ol { padding-left: 18px; margin-bottom: 10px; }
+.prose-article li { margin-bottom: 3px; }
+.prose-article strong { font-weight: 700; }
+.prose-article em { font-style: italic; }
+.prose-article hr { border: none; border-top: 1px solid var(--palette-bone); margin: 12px 0; }
+.prose-article p:last-child { margin-bottom: 0; }
 
 /* Focus ring */
 *:focus-visible {

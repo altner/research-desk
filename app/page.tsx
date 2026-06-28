@@ -57,7 +57,7 @@ export default function ProjectsPage() {
 
   const handleSelect = (p: Project) => {
     setProject(p.id, p.name);
-    router.push("/sources");
+    router.push("/dashboard");
   };
 
   const handleCreate = async () => {
@@ -77,7 +77,7 @@ export default function ProjectsPage() {
     }
     const created: Project = await res.json();
     setProject(created.id, created.name);
-    router.push("/sources");
+    router.push("/dashboard");
   };
 
   return (

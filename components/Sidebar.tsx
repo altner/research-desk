@@ -6,6 +6,16 @@ import { useProject } from "@/lib/project-context";
 
 const NAV = [
   {
+    href: "/dashboard",
+    label: "Home",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M3 9.5L10 3l7 6.5V17a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/>
+        <path d="M7 18v-6h6v6" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/>
+      </svg>
+    ),
+  },
+  {
     href: "/sources",
     label: "Sources",
     icon: (
@@ -51,12 +61,8 @@ export default function Sidebar() {
   };
 
   return (
-    <aside
-      style={{ width: 72, background: "#17263A", flexShrink: 0 }}
-      className="flex flex-col items-center py-0 h-full relative"
-    >
-      {/* Nav items */}
-      <nav className="flex flex-col gap-3 w-full px-2 flex-1" style={{ paddingTop: 12 }}>
+    <aside className="w-[72px] bg-sidebar shrink-0 flex flex-col items-center h-full relative">
+      <nav className="flex flex-col gap-3 w-full px-2 pt-5 flex-1">
         {NAV.map((item) => {
           const active = pathname.startsWith(item.href);
           return (
@@ -64,14 +70,15 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               title={item.label}
-              className="flex flex-col items-center gap-1 py-2 rounded-lg transition-colors"
-              style={{
-                color: active ? "#C8892E" : "rgba(255,255,255,0.5)",
-                background: active ? "rgba(200,137,46,0.12)" : "transparent",
-              }}
+              className={[
+                "flex flex-col items-center gap-1 py-2 rounded-lg transition-colors",
+                active
+                  ? "text-action bg-action/10"
+                  : "text-white/50 bg-transparent hover:text-white/75",
+              ].join(" ")}
             >
               {item.icon}
-              <span style={{ fontSize: 9, letterSpacing: "0.04em", fontWeight: 500, textTransform: "uppercase" }}>
+              <span className="text-[9px] tracking-[0.04em] font-medium uppercase">
                 {item.label}
               </span>
             </Link>

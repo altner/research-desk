@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
   const includeMerged = searchParams.get("includeMerged") === "true";
   const search = searchParams.get("q");
   const folderId = searchParams.get("folderId"); // "none" = unfiled, else folder id
+  const tagId = searchParams.get("tagId");
   const projectId = req.headers.get("x-project-id");
 
   const where: Record<string, unknown> = {};
@@ -17,6 +18,7 @@ export async function GET(req: NextRequest) {
   if (platform) where.platform = platform;
   if (folderId === "none") where.folderId = null;
   else if (folderId) where.folderId = folderId;
+  if (tagId) where.sourceTags = { some: { tagId } };
   if (search) {
     where.OR = [
       { rawText: { contains: search } },
@@ -33,6 +35,7 @@ export async function GET(req: NextRequest) {
       originSource: { select: { id: true, url: true, platform: true, capturedAt: true } },
       derivedSources: { select: { id: true, url: true, platform: true, capturedAt: true, status: true } },
       ideaSources: { include: { idea: { select: { id: true, title: true, status: true } } } },
+      sourceTags: { include: { tag: true } },
     },
   });
 

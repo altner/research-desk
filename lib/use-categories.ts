@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useApiFetch } from "@/lib/use-api-fetch";
+import { CATEGORY_LABELS } from "@/lib/types";
+import type { IdeaCategory } from "@/lib/types";
 
 export interface Category {
   id: string;
@@ -20,7 +22,9 @@ export function useCategories() {
   }, []);
 
   const labelFor = (key: string) =>
-    categories.find((c) => c.key === key)?.labelDe ?? key;
+    categories.find((c) => c.key === key)?.labelDe
+    ?? CATEGORY_LABELS[key as IdeaCategory]
+    ?? key;
 
   const colorFor = (key: string) =>
     categories.find((c) => c.key === key)?.color ?? "#7B5EA7";

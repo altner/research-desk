@@ -66,31 +66,29 @@ export default function IdeaLinkModal({
   };
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 1000,
-      display: "flex", alignItems: "center", justifyContent: "center",
-    }} onClick={onClose}>
-      <div style={{
-        background: "#FDFAF6", borderRadius: 10, padding: "24px 28px", width: 480,
-        maxHeight: "85vh", overflow: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-      }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700 }}>
+    <div
+      className="fixed inset-0 bg-black/35 z-[1000] flex items-center justify-center"
+      onClick={onClose}
+    >
+      <div
+        className="bg-overlay rounded-[10px] p-[24px_28px] w-[480px] max-h-[85vh] overflow-auto shadow-[0_8px_32px_rgba(0,0,0,0.18)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-[16px] font-bold">
             Link {sourceIds.length} source{sourceIds.length !== 1 ? "s" : ""} to an Idea
           </h2>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#7A6E61", fontSize: 18 }}>×</button>
+          <button onClick={onClose} className="bg-transparent border-none cursor-pointer text-text-muted text-[18px] leading-none">×</button>
         </div>
 
         {/* Mode toggle */}
-        <div style={{ display: "flex", gap: 0, marginBottom: 18, border: "1px solid #D8CFBF", borderRadius: 6, overflow: "hidden" }}>
+        <div className="flex mb-[18px] border border-border rounded-md overflow-hidden">
           {(["new", "existing"] as const).map((m) => (
             <button key={m} onClick={() => setMode(m)}
-              style={{
-                flex: 1, padding: "7px 0", fontSize: 13, fontWeight: 600,
-                border: "none", cursor: "pointer",
-                background: mode === m ? "#C8892E" : "transparent",
-                color: mode === m ? "#fff" : "#7A6E61",
-              }}>
+              className={[
+                "flex-1 py-[7px] text-[13px] font-semibold border-none cursor-pointer",
+                mode === m ? "bg-action text-white" : "bg-transparent text-text-muted",
+              ].join(" ")}>
               {m === "new" ? "Create new Idea" : "Existing Idea"}
             </button>
           ))}
@@ -98,46 +96,45 @@ export default function IdeaLinkModal({
 
         {mode === "new" && (
           <>
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>Title / Angle</label>
+            <div className="mb-3">
+              <label className={LABEL_CLS}>Title / Angle</label>
               <input value={title} onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Hidden beach on Koh Lanta"
-                style={inputStyle} />
+                className={INPUT_CLS} />
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>Category</label>
-              <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 5 }}>
+            <div className="mb-3">
+              <label className={LABEL_CLS}>Category</label>
+              <div className="flex gap-[5px] flex-wrap mt-[5px]">
                 {CATEGORIES.map((c) => (
                   <button key={c} onClick={() => setCategory(c)}
-                    style={{
-                      padding: "3px 9px", borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700,
-                      border: "1px solid",
-                      ...(category === c
-                        ? { background: "#C8892E", color: "#fff", borderColor: "#C8892E" }
-                        : { background: "transparent", color: "#7A6E61", borderColor: "#D8CFBF" }),
-                    }}>
+                    className={[
+                      "px-[9px] py-[3px] rounded cursor-pointer text-[11px] font-bold border",
+                      category === c
+                        ? "bg-action text-white border-action"
+                        : "bg-transparent text-text-muted border-border",
+                    ].join(" ")}>
                     {CATEGORY_LABELS[c]}
                   </button>
                 ))}
               </div>
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>Summary</label>
+            <div className="mb-3">
+              <label className={LABEL_CLS}>Summary</label>
               <textarea value={summary} onChange={(e) => setSummary(e.target.value)}
                 rows={3} placeholder="Your own description of the topic ..."
-                style={{ ...inputStyle, resize: "vertical" }} />
+                className={`${INPUT_CLS} resize-y`} />
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>Topic Area</label>
+            <div className="mb-3">
+              <label className={LABEL_CLS}>Topic Area</label>
               <LocationPicker locations={locations as never} value={locationId} onChange={setLocationId} />
             </div>
           </>
         )}
 
         {mode === "existing" && (
-          <div style={{ marginBottom: 12 }}>
-            <label style={labelStyle}>Select Idea</label>
-            <select value={selectedIdeaId} onChange={(e) => setSelectedIdeaId(e.target.value)} style={inputStyle}>
+          <div className="mb-3">
+            <label className={LABEL_CLS}>Select Idea</label>
+            <select value={selectedIdeaId} onChange={(e) => setSelectedIdeaId(e.target.value)} className={INPUT_CLS}>
               <option value="">Choose idea...</option>
               {ideas.map((idea) => (
                 <option key={idea.id} value={idea.id}>{idea.title}</option>
@@ -147,11 +144,10 @@ export default function IdeaLinkModal({
         )}
 
         {error && (
-          <div style={{ background: "#FDECEA", color: "#C0392B", padding: "8px 12px",
-            borderRadius: 5, fontSize: 13, marginBottom: 12 }}>{error}</div>
+          <div className="bg-[#FDECEA] text-[#C0392B] px-3 py-2 rounded-[5px] text-[13px] mb-3">{error}</div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
           <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Link"}</Button>
         </div>
@@ -160,12 +156,5 @@ export default function IdeaLinkModal({
   );
 }
 
-const inputStyle: React.CSSProperties = {
-  width: "100%", padding: "8px 10px", fontSize: 13,
-  border: "1px solid #D8CFBF", borderRadius: 5, background: "#F4EFE6",
-  outline: "none", color: "#1F1A13",
-};
-const labelStyle: React.CSSProperties = {
-  display: "block", fontSize: 11, fontWeight: 700, color: "#7A6E61",
-  letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 5,
-};
+const INPUT_CLS = "w-full px-[10px] py-[8px] text-[13px] border border-border rounded-[5px] bg-card outline-none text-text";
+const LABEL_CLS = "block text-[11px] font-bold text-text-muted tracking-[0.07em] uppercase mb-[5px]";

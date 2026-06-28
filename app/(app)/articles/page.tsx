@@ -2,8 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { LocationCrumb, CategoryBadge, CredibilityBadge } from "@/components/ui";
+import { useRouter } from "next/navigation";
+import MarkdownPreview from "@/components/MarkdownPreview";
+import LocationPicker from "@/components/LocationPicker";
+import { LocationCrumb, CategoryBadge, CredibilityBadge, Button } from "@/components/ui";
 import type { Article, IdeaCategory, Location, Credibility } from "@/lib/types";
+import { CATEGORY_LABELS } from "@/lib/types";
 import { useApiFetch } from "@/lib/use-api-fetch";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -20,20 +24,24 @@ const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
 
 export default function ArticlesPage() {
   const apiFetch = useApiFetch();
+  const router = useRouter();
   const [articles, setArticles] = useState<Article[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeArticle, setActiveArticle] = useState<Article | null>(null);
+  const [showNewModal, setShowNewModal] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
     const params = new URLSearchParams();
     if (filter) params.set("publishStatus", filter);
+    if (categoryFilter) params.set("category", categoryFilter);
     if (search) params.set("q", search);
     params.set("page", String(page));
     apiFetch(`/api/articles?${params}`)
@@ -45,11 +53,11 @@ export default function ArticlesPage() {
         setLoading(false);
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, search, page]);
+  }, [filter, categoryFilter, search, page]);
 
   useEffect(() => { load(); }, [load]);
 
-  useEffect(() => { setPage(1); }, [filter, search]);
+  useEffect(() => { setPage(1); }, [filter, categoryFilter, search]);
 
   useEffect(() => {
     if (!activeId) { setActiveArticle(null); return; }
@@ -59,6 +67,12 @@ export default function ArticlesPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+      {showNewModal && (
+        <NewArticleModal
+          onClose={() => setShowNewModal(false)}
+          onCreate={(id) => { setShowNewModal(false); router.push(`/articles/${id}`); }}
+        />
+      )}
       {/* Header */}
       <div style={{
         padding: "0 20px", height: 56, display: "flex", alignItems: "center", gap: 12,
@@ -90,14 +104,25 @@ export default function ArticlesPage() {
           />
         </div>
 
+        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
+          style={{ height: 32, fontSize: 12, border: "1px solid #D8CFBF", borderRadius: 6,
+            background: "#FDFAF6", padding: "0 8px", color: "#1F1A13" }}>
+          <option value="">All Categories</option>
+          {(Object.entries(CATEGORY_LABELS) as [IdeaCategory, string][]).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </select>
+
         <select value={filter} onChange={(e) => setFilter(e.target.value)}
           style={{ height: 32, fontSize: 12, border: "1px solid #D8CFBF", borderRadius: 6,
             background: "#FDFAF6", padding: "0 8px", color: "#1F1A13" }}>
-          <option value="">All</option>
+          <option value="">All Status</option>
           <option value="draft">Draft</option>
           <option value="in_review">In Review</option>
           <option value="published">Published</option>
         </select>
+
+        <Button onClick={() => setShowNewModal(true)}>+ New Article</Button>
       </div>
 
       {/* 2-column body */}
@@ -209,6 +234,84 @@ function ArticleRow({ article, active, onClick }: { article: Article; active: bo
   );
 }
 
+function NewArticleModal({ onClose, onCreate }: { onClose: () => void; onCreate: (id: string) => void }) {
+  const apiFetch = useApiFetch();
+  const [title, setTitle] = useState("");
+  const [locationId, setLocationId] = useState<string | null>(null);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    apiFetch("/api/locations?flat=true").then((r) => r.json()).then(setLocations);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) { setError("Title is required"); return; }
+    setSaving(true);
+    const res = await apiFetch("/api/articles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: title.trim(), locationId: locationId ?? undefined }),
+    });
+    const data = await res.json();
+    if (!res.ok) { setError(data.error ?? "Failed to create article"); setSaving(false); return; }
+    onCreate(data.id);
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 100,
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <form onSubmit={submit} style={{
+        background: "#FDFAF6", borderRadius: 10, padding: "24px 28px", width: 460,
+        boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+      }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>New Article</h2>
+
+        {error && (
+          <div style={{ background: "#FDECEA", color: "#C0392B", padding: "8px 12px",
+            borderRadius: 5, fontSize: 13, marginBottom: 12 }}>{error}</div>
+        )}
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#A89C8E",
+            letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 5 }}>
+            Title *
+          </label>
+          <input
+            autoFocus
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Article title…"
+            style={{
+              width: "100%", padding: "8px 10px", fontSize: 13, border: "1px solid #D8CFBF",
+              borderRadius: 5, background: "#F4EFE6", outline: "none", color: "#1F1A13",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#A89C8E",
+            letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 5 }}>
+            Location (optional)
+          </label>
+          <LocationPicker locations={locations as never} value={locationId ?? ""} onChange={(id) => setLocationId(id || null)} />
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+          <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
+          <Button type="submit" disabled={saving}>{saving ? "Creating…" : "Create Article"}</Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function ArticleDetail({ article }: { article: Article }) {
   const sc = STATUS_COLORS[article.publishStatus] ?? STATUS_COLORS.draft;
   const ideaArticle = article as Article & {
@@ -233,7 +336,7 @@ function ArticleDetail({ article }: { article: Article }) {
       </div>
 
       {/* Meta */}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
         {article.location && <LocationCrumb location={article.location as Location} />}
         {ideaArticle.idea?.category && <CategoryBadge category={ideaArticle.idea.category as IdeaCategory} />}
         {ideaArticle.idea?.credibility && (
@@ -261,9 +364,9 @@ function ArticleDetail({ article }: { article: Article }) {
           flex: 1, overflow: "auto",
           background: "#F4EFE6", border: "1px solid #E0D8C8", borderRadius: 6,
           padding: "14px 16px", fontSize: 13, lineHeight: 1.7, color: "#1F1A13",
-          whiteSpace: "pre-wrap", marginBottom: 16,
+          marginBottom: 16,
         }}>
-          {article.bodyMarkdown}
+          <MarkdownPreview markdown={article.bodyMarkdown} />
         </div>
       )}
 

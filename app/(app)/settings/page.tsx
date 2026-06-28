@@ -48,7 +48,7 @@ interface LocationFlat {
 
 export default function SettingsPage() {
   const apiFetch = useApiFetch();
-  const [activeTab, setActiveTab] = useState<"templates" | "locations" | "categories">("templates");
+  const [activeTab, setActiveTab] = useState<"templates" | "locations" | "categories" | "tags">("templates");
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
 
@@ -90,10 +90,11 @@ export default function SettingsPage() {
     await loadTemplates();
   };
 
-  const TABS: { key: "templates" | "locations" | "categories"; label: string }[] = [
+  const TABS: { key: "templates" | "locations" | "categories" | "tags"; label: string }[] = [
     { key: "templates", label: "Prompt Templates" },
     { key: "locations", label: "Topic Areas" },
     { key: "categories", label: "Categories" },
+    { key: "tags", label: "Tags" },
   ];
 
   return (
@@ -188,6 +189,9 @@ export default function SettingsPage() {
 
       {/* Categories tab */}
       {activeTab === "categories" && <CategoriesTab />}
+
+      {/* Tags tab */}
+      {activeTab === "tags" && <TagsTab />}
     </div>
   );
 }
@@ -847,6 +851,155 @@ function CategoryForm({ initial, onSave, onCancel }: {
       <div style={{ display: "flex", gap: 8 }}>
         <Button onClick={submit}>Save</Button>
         <Button variant="secondary" onClick={onCancel}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Tags tab ─────────────────────────────────────────────────────────────────
+
+const TAG_COLORS = [
+  "#A89C8E", "#C8892E", "#2D7A77", "#7B5EA7", "#C0392B",
+  "#2E86AB", "#4A7C59", "#D4805A", "#5B6FA6", "#8B7355",
+];
+
+interface Tag { id: string; name: string; color: string; _count: { sources: number } }
+
+function TagsTab() {
+  const apiFetch = useApiFetch();
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState(TAG_COLORS[0]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editColor, setEditColor] = useState("");
+
+  const load = useCallback(() =>
+    apiFetch("/api/tags").then((r) => r.json()).then(setTags),
+  []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { load(); }, [load]);
+
+  const create = async () => {
+    if (!newName.trim()) return;
+    await apiFetch("/api/tags", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName.trim(), color: newColor }),
+    });
+    setNewName("");
+    await load();
+  };
+
+  const startEdit = (tag: Tag) => {
+    setEditingId(tag.id); setEditName(tag.name); setEditColor(tag.color);
+  };
+
+  const saveEdit = async (id: string) => {
+    await apiFetch(`/api/tags/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: editName.trim(), color: editColor }),
+    });
+    setEditingId(null);
+    await load();
+  };
+
+  const del = async (id: string) => {
+    if (!confirm("Delete this tag? It will be removed from all sources.")) return;
+    await apiFetch(`/api/tags/${id}`, { method: "DELETE" });
+    await load();
+  };
+
+  return (
+    <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
+      <div style={{ maxWidth: 600 }}>
+        {/* Create new tag */}
+        <div style={{
+          background: "#FDFAF6", border: "1px solid #E5DDD0", borderRadius: 8,
+          padding: "16px 20px", marginBottom: 24,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#A89C8E", letterSpacing: "0.08em",
+            textTransform: "uppercase", marginBottom: 12 }}>New Tag</div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") create(); }}
+              placeholder="Tag name…"
+              style={{ ...inputStyle, flex: 1 }}
+            />
+            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+              {TAG_COLORS.map((c) => (
+                <button key={c} onClick={() => setNewColor(c)} style={{
+                  width: 20, height: 20, borderRadius: "50%", background: c, border: "none",
+                  cursor: "pointer", outline: newColor === c ? `2px solid ${c}` : "none",
+                  outlineOffset: 2,
+                }} />
+              ))}
+            </div>
+            <Button onClick={create} disabled={!newName.trim()}>Add</Button>
+          </div>
+        </div>
+
+        {/* Tag list */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {tags.length === 0 && (
+            <div style={{ color: "#A89C8E", fontSize: 13, padding: "12px 0" }}>No tags yet.</div>
+          )}
+          {tags.map((tag) => (
+            <div key={tag.id} style={{
+              background: "#FDFAF6", border: "1px solid #E5DDD0", borderRadius: 7,
+              padding: "10px 14px", display: "flex", alignItems: "center", gap: 12,
+            }}>
+              {editingId === tag.id ? (
+                <>
+                  <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                    {TAG_COLORS.map((c) => (
+                      <button key={c} onClick={() => setEditColor(c)} style={{
+                        width: 18, height: 18, borderRadius: "50%", background: c, border: "none",
+                        cursor: "pointer", outline: editColor === c ? `2px solid ${c}` : "none",
+                        outlineOffset: 2,
+                      }} />
+                    ))}
+                  </div>
+                  <input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") saveEdit(tag.id); if (e.key === "Escape") setEditingId(null); }}
+                    style={{ ...inputStyle, flex: 1, padding: "4px 8px" }}
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={() => saveEdit(tag.id)}>Save</Button>
+                  <Button size="sm" variant="secondary" onClick={() => setEditingId(null)}>Cancel</Button>
+                </>
+              ) : (
+                <>
+                  <span style={{
+                    display: "inline-block", width: 10, height: 10, borderRadius: "50%",
+                    background: tag.color, flexShrink: 0,
+                  }} />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#1F1A13" }}>{tag.name}</span>
+                  <span style={{ fontSize: 11, color: "#A89C8E" }}>
+                    {tag._count.sources} source{tag._count.sources !== 1 ? "s" : ""}
+                  </span>
+                  <button onClick={() => startEdit(tag)} style={{
+                    background: "none", border: "none", cursor: "pointer", color: "#7A6E61",
+                    fontSize: 12, padding: "2px 6px", borderRadius: 4,
+                  }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#E8E0D0")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                  >Edit</button>
+                  <button onClick={() => del(tag.id)} style={{
+                    background: "none", border: "none", cursor: "pointer", color: "#C0392B",
+                    fontSize: 12, padding: "2px 6px", borderRadius: 4,
+                  }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#FDECEA")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                  >Delete</button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

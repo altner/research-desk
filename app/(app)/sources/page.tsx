@@ -36,6 +36,8 @@ export default function InboxPage() {
   const [filterPlatform, setFilterPlatform] = useState("");
   const [filterStatus, setFilterStatus] = useState("new");
   const [filterSearch, setFilterSearch] = useState("");
+  const [filterTag, setFilterTag] = useState("");
+  const [allTags, setAllTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [newFolderName, setNewFolderName] = useState("");
   const [addingFolder, setAddingFolder] = useState(false);
@@ -56,6 +58,7 @@ export default function InboxPage() {
     if (filterStatus) params.set("status", filterStatus);
     else params.set("includeMerged", "true");
     if (filterSearch) params.set("q", filterSearch);
+    if (filterTag) params.set("tagId", filterTag);
     params.set("folderId", activeFolderId);
     const res = await apiFetch(`/api/sources?${params}`);
     const data = await res.json();
@@ -63,10 +66,14 @@ export default function InboxPage() {
     setActiveId((prev) => (prev && data.some((s: Source) => s.id === prev) ? prev : null));
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterPlatform, filterStatus, filterSearch, activeFolderId]);
+  }, [filterPlatform, filterStatus, filterSearch, filterTag, activeFolderId]);
 
   useEffect(() => { loadFolders(); }, [loadFolders]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    apiFetch("/api/tags").then((r) => r.json()).then(setAllTags);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!activeId) { setActiveSource(null); return; }
@@ -198,6 +205,15 @@ export default function InboxPage() {
           <option value="discarded">Discarded</option>
           <option value="merged">Merged</option>
         </select>
+
+        {allTags.length > 0 && (
+          <select value={filterTag} onChange={(e) => setFilterTag(e.target.value)}
+            style={{ height: 32, fontSize: 12, border: "1px solid #D8CFBF", borderRadius: 6,
+              background: "#FDFAF6", padding: "0 8px", color: "#1F1A13" }}>
+            <option value="">All Tags</option>
+            {allTags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        )}
 
         <Button onClick={() => setShowCapture(true)}>+ New Source</Button>
       </div>
@@ -368,6 +384,7 @@ export default function InboxPage() {
             <SourceDetail
               source={activeSource}
               folders={folders}
+              allTags={allTags}
               onDiscard={() => discard([activeSource.id])}
               onLinkIdea={() => openLinkIdea([activeSource.id])}
               onEdit={() => setShowEditSource(true)}
@@ -527,6 +544,12 @@ function SourceRow({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           {source.location && <LocationCrumb location={source.location as Location} />}
+          {(source as Source & { sourceTags?: { tag: { id: string; name: string; color: string } }[] }).sourceTags?.map(({ tag }) => (
+            <span key={tag.id} style={{
+              fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 20,
+              color: tag.color, background: tag.color + "22", border: `1px solid ${tag.color}44`,
+            }}>{tag.name}</span>
+          ))}
           <span style={{ fontSize: 11, color: "#A89C8E" }}>{date}</span>
           <StatusBadge status={source.status as import("@/lib/types").SourceStatus} />
           {(source as Source & { _hasDuplicate?: boolean })._hasDuplicate && (
@@ -542,18 +565,34 @@ function SourceRow({
 }
 
 function SourceDetail({
-  source, folders, onDiscard, onLinkIdea, onEdit, onMoveToFolder, onOpenSource, onRefresh,
+  source, folders, allTags, onDiscard, onLinkIdea, onEdit, onMoveToFolder, onOpenSource, onRefresh,
 }: {
   source: Source; folders: Folder[];
+  allTags: { id: string; name: string; color: string }[];
   onDiscard: () => void; onLinkIdea: () => void; onEdit: () => void;
   onMoveToFolder: (folderId: string | null) => void;
   onOpenSource: (id: string) => void;
   onRefresh: () => void;
 }) {
+  const apiFetch = useApiFetch();
+
   const updateStatus = async (status: string) => {
     await fetch(`/api/sources/${source.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
+    });
+    onRefresh();
+  };
+
+  const sourceTags = (source as Source & { sourceTags?: { tag: { id: string; name: string; color: string } }[] }).sourceTags ?? [];
+  const currentTagIds = new Set(sourceTags.map((st) => st.tag.id));
+
+  const toggleTag = async (tagId: string) => {
+    const next = new Set(currentTagIds);
+    if (next.has(tagId)) next.delete(tagId); else next.add(tagId);
+    await apiFetch(`/api/sources/${source.id}/tags`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tagIds: Array.from(next) }),
     });
     onRefresh();
   };
@@ -743,6 +782,33 @@ function SourceDetail({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Tags */}
+      {allTags.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#A89C8E", letterSpacing: "0.06em",
+            textTransform: "uppercase", marginBottom: 8 }}>Tags</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {allTags.map((tag) => {
+              const active = currentTagIds.has(tag.id);
+              return (
+                <button key={tag.id} onClick={() => toggleTag(tag.id)} style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 500,
+                  border: `1px solid ${active ? tag.color : "#D8CFBF"}`,
+                  background: active ? tag.color + "22" : "transparent",
+                  color: active ? tag.color : "#7A6E61",
+                  cursor: "pointer", transition: "all 0.1s",
+                }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: tag.color,
+                    display: "inline-block", flexShrink: 0 }} />
+                  {tag.name}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 

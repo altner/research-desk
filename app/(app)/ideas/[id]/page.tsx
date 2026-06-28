@@ -76,21 +76,19 @@ export default function IdeaDetailPage({ params }: { params: Promise<{ id: strin
         </svg>
         Back
       </button>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
-          <div style={{ marginBottom: 8 }}>
-            <CategoryBadge category={idea.category} label={labelFor(idea.category)} color={colorFor(idea.category)} />
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1F1A13", lineHeight: 1.3, marginBottom: 6 }}>{idea.title}</h1>
+        {idea.location && (
+          <div style={{ marginBottom: 10 }}>
+            <LocationCrumb location={idea.location as Location} />
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1F1A13", lineHeight: 1.3 }}>{idea.title}</h1>
-          {idea.location && (
-            <div style={{ marginTop: 8 }}>
-              <LocationCrumb location={idea.location as Location} />
-            </div>
-          )}
+        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <CategoryBadge category={idea.category} label={labelFor(idea.category)} color={colorFor(idea.category)} />
+          <Button variant="secondary" onClick={() => setEdit(!edit)}>Edit</Button>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6 }}>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <Button variant="secondary" onClick={() => setEdit(!edit)}>Edit</Button>
             {templates.length > 0 && (
               <select
                 value={templateId}
@@ -133,7 +131,7 @@ export default function IdeaDetailPage({ params }: { params: Promise<{ id: strin
           </div>
           {genError && (
             <div style={{ fontSize: 11, color: "#B0301A", background: "#FDE8E4",
-              border: "1px solid #F0B8B0", borderRadius: 4, padding: "4px 8px", maxWidth: 280, textAlign: "right" }}>
+              border: "1px solid #F0B8B0", borderRadius: 4, padding: "4px 8px", maxWidth: 400 }}>
               {genError}
             </div>
           )}
@@ -166,36 +164,39 @@ export default function IdeaDetailPage({ params }: { params: Promise<{ id: strin
       {/* Summary */}
       {!edit && (
         <>
-          {idea.summary && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#A89C8E", letterSpacing: "0.07em",
-                textTransform: "uppercase", marginBottom: 8 }}>Summary</div>
-              <div style={{ background: "#F4EFE6", borderRadius: 6, padding: "12px 14px",
-                fontSize: 14, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>
-                {idea.summary}
-              </div>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#A89C8E", letterSpacing: "0.07em",
+              textTransform: "uppercase", marginBottom: 8 }}>Summary</div>
+            <div style={{ background: "#F4EFE6", borderRadius: 6, padding: "12px 14px",
+              fontSize: 14, lineHeight: 1.65, whiteSpace: "pre-wrap",
+              color: idea.summary ? "#1F1A13" : "#A89C8E", fontStyle: idea.summary ? "normal" : "italic" }}>
+              {idea.summary || "No summary yet — click Edit to add one."}
             </div>
-          )}
-          {idea.researchNotes && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#A89C8E", letterSpacing: "0.07em",
-                textTransform: "uppercase", marginBottom: 8 }}>Research Notes</div>
-              <div style={{ background: "#F4EFE6", borderRadius: 6, padding: "12px 14px",
-                fontSize: 14, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>
-                {idea.researchNotes}
-              </div>
+          </div>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#A89C8E", letterSpacing: "0.07em",
+              textTransform: "uppercase", marginBottom: 8 }}>Research Notes</div>
+            <div style={{ background: "#F4EFE6", borderRadius: 6, padding: "12px 14px",
+              fontSize: 14, lineHeight: 1.65, whiteSpace: "pre-wrap",
+              color: idea.researchNotes ? "#1F1A13" : "#A89C8E", fontStyle: idea.researchNotes ? "normal" : "italic" }}>
+              {idea.researchNotes || "No research notes yet — click Edit to add observations."}
             </div>
-          )}
+          </div>
         </>
       )}
 
       {/* Sources (read-only, for inspiration) */}
-      {(idea.ideaSources?.length ?? 0) > 0 && (
-        <div>
+      <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#A89C8E", letterSpacing: "0.07em",
             textTransform: "uppercase", marginBottom: 10 }}>
-            Linked Sources ({idea.ideaSources!.length})
+            Linked Sources ({idea.ideaSources?.length ?? 0})
           </div>
+          {(idea.ideaSources?.length ?? 0) === 0 && (
+            <div style={{ background: "#F4EFE6", borderRadius: 6, padding: "12px 14px",
+              fontSize: 14, color: "#A89C8E", fontStyle: "italic" }}>
+              No sources linked yet — add sources from the Inbox.
+            </div>
+          )}
           {idea.ideaSources!.map(({ source }) => (
             <div key={source.id} style={{
               display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
@@ -230,7 +231,6 @@ export default function IdeaDetailPage({ params }: { params: Promise<{ id: strin
             </div>
           ))}
         </div>
-      )}
     </div>
   );
 }
