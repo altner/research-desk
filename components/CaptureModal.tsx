@@ -6,6 +6,7 @@ import type { Platform, IdeaCategory, Location } from "@/lib/types";
 import { PLATFORM_LABELS, CATEGORY_LABELS } from "@/lib/types";
 import LocationPicker from "@/components/LocationPicker";
 import { useApiFetch } from "@/lib/use-api-fetch";
+import { detectPlatform } from "@/lib/url-utils";
 
 const PLATFORMS: Platform[] = ["reddit", "tiktok", "instagram", "facebook", "youtube", "forum", "other"];
 const CATEGORIES: IdeaCategory[] = [
@@ -16,6 +17,7 @@ const CATEGORIES: IdeaCategory[] = [
 export default function CaptureModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const apiFetch = useApiFetch();
   const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
   const [platform, setPlatform] = useState<Platform>("reddit");
   const [rawText, setRawText] = useState("");
   const [locationId, setLocationId] = useState("");
@@ -25,6 +27,7 @@ export default function CaptureModal({ onClose, onSaved }: { onClose: () => void
   const [ideaCategory, setIdeaCategory] = useState<IdeaCategory>("geheimtipp");
   const [locations, setLocations] = useState<Location[]>([]);
   const [saving, setSaving] = useState(false);
+  const [fetchingTitle, setFetchingTitle] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -42,7 +45,7 @@ export default function CaptureModal({ onClose, onSaved }: { onClose: () => void
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        url, platform, rawText: rawText || null,
+        url, title: title || null, platform, rawText: rawText || null,
         locationId: locationId || null,
         originSourceId: originSourceId || null,
         ...(createIdea ? { createIdea: { title: ideaTitle, category: ideaCategory } } : {}),
@@ -78,9 +81,40 @@ export default function CaptureModal({ onClose, onSaved }: { onClose: () => void
               <path d="M5.5 7.5a3.5 3.5 0 005 0l1-1a3.536 3.536 0 10-5-5l-.5.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
               <path d="M8.5 6.5a3.5 3.5 0 00-5 0l-1 1a3.536 3.536 0 105 5l.5-.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
             </svg>
-            <input value={url} onChange={(e) => setUrl(e.target.value)}
+            <input value={url} onChange={(e) => {
+              const val = e.target.value;
+              setUrl(val);
+              const detected = detectPlatform(val);
+              setPlatform(detected as Platform);
+            }}
               placeholder="https://..."
               style={{ ...inputStyle, paddingLeft: 30 }} />
+          </div>
+        </Field>
+
+        <Field label="Title" hint="optional">
+          <div style={{ display: "flex", gap: 6 }}>
+            <input value={title} onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Best street food in Chiang Mai"
+              style={{ ...inputStyle, flex: 1 }} />
+            <button
+              type="button"
+              disabled={!url || fetchingTitle}
+              onClick={async () => {
+                setFetchingTitle(true);
+                const res = await fetch(`/api/fetch-title?url=${encodeURIComponent(url)}`);
+                const d = await res.json();
+                if (d.title) setTitle(d.title);
+                setFetchingTitle(false);
+              }}
+              style={{
+                flexShrink: 0, height: 36, padding: "0 12px", fontSize: 12,
+                border: "1px solid #D8CFBF", borderRadius: 5, cursor: url ? "pointer" : "default",
+                background: "#F4EFE6", color: url ? "#1F1A13" : "#A89C8E", whiteSpace: "nowrap",
+              }}
+            >
+              {fetchingTitle ? "…" : "Fetch"}
+            </button>
           </div>
         </Field>
 

@@ -134,6 +134,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       data: {
         bodyMarkdown: modelOutput,
         generationSource: "ai_draft_human_edited",
+        publishStatus: "draft",
       },
     });
   }

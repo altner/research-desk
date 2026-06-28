@@ -6,6 +6,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const {
     url,
+    title,
     platform,
     rawText,
     locationId,
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
       platform: detectedPlatform,
       url,
       urlNormalized: urlNorm,
+      title: title ?? null,
       rawText: rawText ?? null,
       rawTextHash,
       locationId: locationId ?? null,

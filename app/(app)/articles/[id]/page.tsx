@@ -107,6 +107,19 @@ export default function ArtikelEditorPage({ params }: { params: Promise<{ id: st
             <span>{(article as Article & { idea?: { _count?: { ideaSources: number } } }).idea?._count?.ideaSources ?? 0} sources</span>
             <span>·</span>
             <span>Last edited {new Date(article.updatedAt).toLocaleDateString("en-US")}</span>
+            {(article as Article & { idea?: { id: string } }).idea?.id && (
+              <>
+                <span>·</span>
+                <a
+                  href={`/ideas/${(article as Article & { idea?: { id: string } }).idea!.id}`}
+                  style={{ color: "#C8892E", textDecoration: "none" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                  onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                >
+                  Open Idea
+                </a>
+              </>
+            )}
           </div>
         </div>
 

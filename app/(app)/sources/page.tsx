@@ -7,6 +7,7 @@ import { PLATFORM_LABELS, CATEGORY_LABELS } from "@/lib/types";
 import CaptureModal from "@/components/CaptureModal";
 import IdeaLinkModal from "@/components/IdeaLinkModal";
 import EditSourceModal from "@/components/EditSourceModal";
+import MergeModal from "@/components/MergeModal";
 import { useApiFetch } from "@/lib/use-api-fetch";
 
 const PLATFORMS: Platform[] = ["reddit", "tiktok", "instagram", "facebook", "youtube", "forum", "other"];
@@ -30,6 +31,7 @@ export default function InboxPage() {
   const [showCapture, setShowCapture] = useState(false);
   const [showLinkIdea, setShowLinkIdea] = useState(false);
   const [showEditSource, setShowEditSource] = useState(false);
+  const [showMerge, setShowMerge] = useState(false);
   const [linkTargetIds, setLinkTargetIds] = useState<string[]>([]);
   const [filterPlatform, setFilterPlatform] = useState("");
   const [filterStatus, setFilterStatus] = useState("new");
@@ -52,7 +54,7 @@ export default function InboxPage() {
     const params = new URLSearchParams();
     if (filterPlatform) params.set("platform", filterPlatform);
     if (filterStatus) params.set("status", filterStatus);
-    else params.set("includeMerged", "false");
+    else params.set("includeMerged", "true");
     if (filterSearch) params.set("q", filterSearch);
     params.set("folderId", activeFolderId);
     const res = await apiFetch(`/api/sources?${params}`);
@@ -103,15 +105,9 @@ export default function InboxPage() {
     setShowLinkIdea(true);
   };
 
-  const doMerge = async () => {
+  const doMerge = () => {
     if (selected.size < 2) return;
-    const ids = Array.from(selected);
-    await apiFetch("/api/sources/merge", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sourceIds: ids, mainSourceId: ids[0] }),
-    });
-    setSelected(new Set());
-    load();
+    setShowMerge(true);
   };
 
   const moveToFolder = async (sourceIds: string[], folderId: string | null) => {
@@ -376,6 +372,7 @@ export default function InboxPage() {
               onLinkIdea={() => openLinkIdea([activeSource.id])}
               onEdit={() => setShowEditSource(true)}
               onMoveToFolder={(folderId) => moveToFolder([activeSource.id], folderId)}
+              onOpenSource={(id) => setActiveId(id)}
               onRefresh={() => {
                 load();
                 loadFolders();
@@ -401,6 +398,13 @@ export default function InboxPage() {
           sourceIds={linkTargetIds}
           onClose={() => setShowLinkIdea(false)}
           onSaved={() => { load(); setShowLinkIdea(false); setSelected(new Set()); }}
+        />
+      )}
+      {showMerge && (
+        <MergeModal
+          sources={sources.filter((s) => selected.has(s.id))}
+          onClose={() => setShowMerge(false)}
+          onMerged={() => { setShowMerge(false); setSelected(new Set()); load(); }}
         />
       )}
       {showEditSource && activeSource && (
@@ -503,6 +507,7 @@ function SourceRow({
         padding: "10px 14px",
         background: active ? "#EDE6D8" : "transparent",
         borderBottom: "1px solid #E8E0D0",
+        borderLeft: active ? "3px solid #C8892E" : "3px solid transparent",
         cursor: "pointer",
         transition: "background 0.1s",
       }}
@@ -515,8 +520,10 @@ function SourceRow({
       <PlatformBadge platform={source.platform as Platform} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "#1F1A13", lineHeight: 1.4, marginBottom: 3 }}>
-          {source.rawText?.slice(0, 80) || source.url.slice(0, 60)}
-          {(source.rawText?.length ?? 0) > 80 && "…"}
+          {(source as Source & { title?: string | null }).title
+            || source.rawText?.slice(0, 80)
+            || source.url.slice(0, 60)}
+          {!(source as Source & { title?: string | null }).title && (source.rawText?.length ?? 0) > 80 && "…"}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           {source.location && <LocationCrumb location={source.location as Location} />}
@@ -535,11 +542,12 @@ function SourceRow({
 }
 
 function SourceDetail({
-  source, folders, onDiscard, onLinkIdea, onEdit, onMoveToFolder, onRefresh,
+  source, folders, onDiscard, onLinkIdea, onEdit, onMoveToFolder, onOpenSource, onRefresh,
 }: {
   source: Source; folders: Folder[];
   onDiscard: () => void; onLinkIdea: () => void; onEdit: () => void;
   onMoveToFolder: (folderId: string | null) => void;
+  onOpenSource: (id: string) => void;
   onRefresh: () => void;
 }) {
   const updateStatus = async (status: string) => {
@@ -550,7 +558,7 @@ function SourceDetail({
     onRefresh();
   };
 
-  const sourceWithFolder = source as Source & { folderId?: string | null };
+  const sourceWithFolder = source as Source & { folderId?: string | null; mergedInto?: { id: string; url: string; platform: string } | null };
 
   return (
     <div style={{ padding: 24 }}>
@@ -570,6 +578,29 @@ function SourceDetail({
         <StatusBadge status={source.status as import("@/lib/types").SourceStatus} />
       </div>
 
+      {sourceWithFolder.mergedInto && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8, marginBottom: 12,
+          padding: "8px 12px", borderRadius: 6,
+          background: "#F4EFE6", border: "1px solid #E0D8C8",
+        }}>
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+            <path d="M3 7h8M7 3l4 4-4 4" stroke="#A89C8E" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span style={{ fontSize: 11, color: "#7A6E61" }}>Merged into</span>
+          <PlatformBadge platform={sourceWithFolder.mergedInto.platform as Platform} />
+          <button
+            onClick={() => onOpenSource(sourceWithFolder.mergedInto!.id)}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: 12, color: "#C8892E", padding: 0, textAlign: "left", wordBreak: "break-all",
+            }}
+          >
+            {sourceWithFolder.mergedInto.url.slice(0, 60)}{sourceWithFolder.mergedInto.url.length > 60 && "…"}
+          </button>
+        </div>
+      )}
+
       {/* Folder indicator */}
       {sourceWithFolder.folderId && (
         <div style={{ marginBottom: 10 }}>
@@ -586,6 +617,12 @@ function SourceDetail({
               </span>
             ) : null;
           })()}
+        </div>
+      )}
+
+      {(source as Source & { title?: string | null }).title && (
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#1F1A13", marginBottom: 12 }}>
+          {(source as Source & { title?: string | null }).title}
         </div>
       )}
 
@@ -621,6 +658,25 @@ function SourceDetail({
           {source.url}
         </a>
       </div>
+
+      {((source as Source & { mergedFrom?: { id: string; url: string; platform: string }[] }).mergedFrom?.length ?? 0) > 0 && (
+        <div style={{
+          background: "#F9F5EE", border: "1px solid #E0D8C8", borderRadius: 6,
+          padding: "12px 14px", marginBottom: 16,
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: "#A89C8E",
+            textTransform: "uppercase", marginBottom: 10 }}>Merged Sources</div>
+          {(source as Source & { mergedFrom?: { id: string; url: string; platform: string }[] }).mergedFrom!.map((m) => (
+            <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <PlatformBadge platform={m.platform as Platform} />
+              <a href={m.url} target="_blank" rel="noreferrer"
+                style={{ fontSize: 12, color: "#C8892E", wordBreak: "break-all" }}>
+                {m.url.slice(0, 70)}{m.url.length > 70 && "…"}
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
 
       {(source.originSource || (source.derivedSources?.length ?? 0) > 0) && (
         <div style={{

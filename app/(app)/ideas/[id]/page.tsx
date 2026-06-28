@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { use } from "react";
 import { CategoryBadge, LocationCrumb, CredibilityBadge, PlatformBadge, Button } from "@/components/ui";
-import type { Idea, IdeaCategory, Location, Platform, Credibility, IdeaStatus } from "@/lib/types";
+import type { Idea, IdeaCategory, Location, Platform, Credibility, IdeaStatus, Article } from "@/lib/types";
 import { CREDIBILITY_LABELS, IDEA_STATUS_LABELS } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { useCategories } from "@/lib/use-categories";
@@ -104,9 +104,20 @@ export default function IdeaDetailPage({ params }: { params: Promise<{ id: strin
                 ))}
               </select>
             )}
-            <Button onClick={generateDraft} disabled={generating}>
-              {generating ? "Generating…" : "Generate AI Draft"}
-            </Button>
+            {(idea as Idea & { articles?: Article[] }).articles?.[0]?.id ? (
+              <>
+                <Button variant="secondary" onClick={() => router.push(`/articles/${(idea as Idea & { articles?: Article[] }).articles![0].id}`)}>
+                  Open Article
+                </Button>
+                <Button onClick={generateDraft} disabled={generating}>
+                  {generating ? "Generating…" : "Generate new AI Draft"}
+                </Button>
+              </>
+            ) : (
+              <Button onClick={generateDraft} disabled={generating}>
+                {generating ? "Generating…" : "Generate AI Draft"}
+              </Button>
+            )}
           </div>
           {genError && (
             <div style={{ fontSize: 11, color: "#B0301A", background: "#FDE8E4",
@@ -186,6 +197,24 @@ export default function IdeaDetailPage({ params }: { params: Promise<{ id: strin
               <span style={{ fontSize: 11, color: "#A89C8E", marginLeft: "auto", flexShrink: 0 }}>
                 {new Date(source.capturedAt).toLocaleDateString("en-US")}
               </span>
+              <button
+                onClick={async () => {
+                  await fetch(`/api/ideas/${id}/sources/${source.id}`, { method: "DELETE" });
+                  setIdea((prev) => prev ? {
+                    ...prev,
+                    ideaSources: prev.ideaSources!.filter((s) => s.source.id !== source.id),
+                  } : prev);
+                }}
+                style={{
+                  background: "none", border: "none", cursor: "pointer", color: "#A89C8E",
+                  padding: "2px 4px", borderRadius: 4, flexShrink: 0, lineHeight: 1,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#B0301A")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#A89C8E")}
+                title="Remove source"
+              >
+                ✕
+              </button>
             </div>
           ))}
         </div>

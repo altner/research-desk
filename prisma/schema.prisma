@@ -67,6 +67,7 @@ model Source {
   platform         String
   url              String
   urlNormalized    String
+  title            String?
   rawText          String?
   rawTextHash      String?
   capturedAt       DateTime @default(now())

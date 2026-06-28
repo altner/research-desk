@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   if (!sourceIds?.length) return NextResponse.json({ error: "sourceIds required" }, { status: 400 });
 
   await prisma.source.updateMany({
-    where: { id: { in: sourceIds } },
+    where: { id: { in: sourceIds }, status: { not: "merged" } },
     data: { status: "discarded" },
   });
 
