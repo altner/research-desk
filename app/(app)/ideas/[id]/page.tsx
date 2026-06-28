@@ -16,6 +16,7 @@ export default function IdeaDetailPage({ params }: { params: Promise<{ id: strin
   const [idea, setIdea] = useState<Idea | null>(null);
   const [edit, setEdit] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [creatingBlank, setCreatingBlank] = useState(false);
   const [genError, setGenError] = useState("");
   const [templates, setTemplates] = useState<{ id: string; name: string; isDefault: boolean }[]>([]);
   const [templateId, setTemplateId] = useState("");
@@ -114,9 +115,20 @@ export default function IdeaDetailPage({ params }: { params: Promise<{ id: strin
                 </Button>
               </>
             ) : (
-              <Button onClick={generateDraft} disabled={generating}>
-                {generating ? "Generating…" : "Generate AI Draft"}
-              </Button>
+              <>
+                <Button onClick={generateDraft} disabled={generating}>
+                  {generating ? "Generating…" : "Generate AI Draft"}
+                </Button>
+                <Button variant="secondary" disabled={creatingBlank} onClick={async () => {
+                  setCreatingBlank(true);
+                  const res = await fetch(`/api/ideas/${id}/create-article`, { method: "POST" });
+                  const data = await res.json();
+                  setCreatingBlank(false);
+                  if (data.article?.id) router.push(`/articles/${data.article.id}`);
+                }}>
+                  {creatingBlank ? "Creating…" : "Create blank Article"}
+                </Button>
+              </>
             )}
           </div>
           {genError && (
