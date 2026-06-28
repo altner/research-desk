@@ -7,11 +7,16 @@ export async function GET(req: NextRequest) {
   const platform = searchParams.get("platform");
   const includeMerged = searchParams.get("includeMerged") === "true";
   const search = searchParams.get("q");
+  const folderId = searchParams.get("folderId"); // "none" = unfiled, else folder id
+  const projectId = req.headers.get("x-project-id");
 
   const where: Record<string, unknown> = {};
+  if (projectId) where.projectId = projectId;
   if (status) where.status = status;
   else if (!includeMerged) where.status = { not: "merged" };
   if (platform) where.platform = platform;
+  if (folderId === "none") where.folderId = null;
+  else if (folderId) where.folderId = folderId;
   if (search) {
     where.OR = [
       { rawText: { contains: search } },

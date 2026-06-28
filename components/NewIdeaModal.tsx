@@ -2,18 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui";
-import type { IdeaCategory, Location } from "@/lib/types";
-import { CATEGORY_LABELS } from "@/lib/types";
+import type { Location } from "@/lib/types";
 import LocationPicker from "@/components/LocationPicker";
-
-const CATEGORIES: IdeaCategory[] = [
-  "geheimtipp", "warnung_abzocke", "erwartung_vs_realitaet", "food_tipp",
-  "stimmungsbild", "kultureller_fauxpas", "praktischer_tipp", "sonstige",
-];
+import { useApiFetch } from "@/lib/use-api-fetch";
+import { useCategories } from "@/lib/use-categories";
 
 export default function NewIdeaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const apiFetch = useApiFetch();
+  const { categories } = useCategories();
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<IdeaCategory>("geheimtipp");
+  const [category, setCategory] = useState<string>("");
   const [summary, setSummary] = useState("");
   const [locationId, setLocationId] = useState("");
   const [locations, setLocations] = useState<Location[]>([]);
@@ -21,13 +19,18 @@ export default function NewIdeaModal({ onClose, onSaved }: { onClose: () => void
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/locations?flat=true").then((r) => r.json()).then(setLocations);
+    apiFetch("/api/locations?flat=true").then((r) => r.json()).then(setLocations);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (categories.length > 0 && !category) setCategory(categories[0].key);
+  }, [categories, category]);
 
   const save = async () => {
     if (!title || !locationId) { setError("Title and topic area are required"); return; }
     setSaving(true);
-    const res = await fetch("/api/ideas", {
+    const res = await apiFetch("/api/ideas", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, category, summary, locationId }),
     });
@@ -58,15 +61,15 @@ export default function NewIdeaModal({ onClose, onSaved }: { onClose: () => void
         <div style={{ marginBottom: 12 }}>
           <label style={labelStyle}>Category</label>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 5 }}>
-            {CATEGORIES.map((c) => (
-              <button key={c} onClick={() => setCategory(c)} style={{
+            {categories.map((c) => (
+              <button key={c.key} onClick={() => setCategory(c.key)} style={{
                 padding: "3px 9px", borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700,
                 border: "1px solid",
-                ...(category === c
+                ...(category === c.key
                   ? { background: "#C8892E", color: "#fff", borderColor: "#C8892E" }
                   : { background: "transparent", color: "#7A6E61", borderColor: "#D8CFBF" }),
               }}>
-                {CATEGORY_LABELS[c]}
+                {c.labelDe}
               </button>
             ))}
           </div>

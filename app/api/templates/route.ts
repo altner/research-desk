@@ -5,8 +5,10 @@ const locationInclude = {
   location: { select: { id: true, nameEn: true, nameDe: true } },
 } as const;
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const projectId = req.headers.get("x-project-id");
   const templates = await prisma.promptTemplate.findMany({
+    where: projectId ? { projectId } : {},
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
     include: locationInclude,
   });
@@ -18,6 +20,7 @@ export async function POST(req: NextRequest) {
   if (!name || !template) {
     return NextResponse.json({ error: "name and template are required" }, { status: 400 });
   }
+  const projectId = req.headers.get("x-project-id");
   if (isDefault) {
     await prisma.promptTemplate.updateMany({ data: { isDefault: false } });
   }
@@ -28,6 +31,7 @@ export async function POST(req: NextRequest) {
       template,
       isDefault: !!isDefault,
       locationId: locationId ?? null,
+      ...(projectId ? { projectId } : {}),
     },
     include: locationInclude,
   });

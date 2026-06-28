@@ -144,6 +144,14 @@ const REGIONS: Array<{
 ];
 
 async function main() {
+  // Create default project first so all locations can reference it
+  const defaultProject = await prisma.project.upsert({
+    where: { id: "default-project" },
+    update: {},
+    create: { id: "default-project", name: "Thailand", description: "Thailand research project" },
+  });
+  const pid = defaultProject.id;
+
   console.log("Seeding Thailand location hierarchy...");
 
   const thailand = await prisma.location.upsert({
@@ -155,6 +163,7 @@ async function main() {
       nameEn: "Thailand",
       nameTh: "ประเทศไทย",
       slug: "thailand",
+      projectId: pid,
     },
   });
 
@@ -171,6 +180,7 @@ async function main() {
         nameTh: region.nameTh,
         slug: region.slug,
         parentId: thailand.id,
+        projectId: pid,
       },
     });
 
@@ -187,6 +197,7 @@ async function main() {
           nameTh: province.nameTh,
           slug: province.slug,
           parentId: regionRecord.id,
+          projectId: pid,
         },
       });
     }
@@ -207,6 +218,8 @@ async function main() {
     });
     console.log("Linked Thailand template to Thailand location.");
   }
+
+  console.log(`Default project "${defaultProject.name}" ready.`);
 }
 
 main()

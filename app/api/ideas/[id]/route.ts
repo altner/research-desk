@@ -21,7 +21,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     },
   });
   if (!idea) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(idea);
+  return NextResponse.json({ ...idea, confirmationCount: idea.ideaSources.length });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

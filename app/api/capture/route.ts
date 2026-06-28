@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
     locationId,
     originSourceId,
     createIdea,
+    status,
   } = body;
 
   if (!url) return NextResponse.json({ error: "url is required" }, { status: 400 });
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
 
   const rawTextHash = rawText ? hashText(rawText) : null;
 
+  const projectId = req.headers.get("x-project-id");
   const source = await prisma.source.create({
     data: {
       platform: detectedPlatform,
@@ -35,7 +37,8 @@ export async function POST(req: NextRequest) {
       rawTextHash,
       locationId: locationId ?? null,
       originSourceId: originSourceId ?? null,
-      status: "new",
+      status: status ?? "new",
+      ...(projectId ? { projectId } : {}),
     },
   });
 
@@ -55,6 +58,7 @@ export async function POST(req: NextRequest) {
         summary: rawText ?? title,
         locationId: locId,
         status: "idea",
+        ...(projectId ? { projectId } : {}),
       },
     });
     await prisma.ideaSource.create({ data: { ideaId: idea.id, sourceId: source.id } });

@@ -6,6 +6,7 @@ import type { Idea, IdeaStatus, IdeaCategory, Location } from "@/lib/types";
 import { IDEA_STATUS_LABELS, IDEA_STATUS_COLUMNS } from "@/lib/types";
 import Link from "next/link";
 import NewIdeaModal from "@/components/NewIdeaModal";
+import { useApiFetch } from "@/lib/use-api-fetch";
 
 const STATUS_COLORS: Record<IdeaStatus, string> = {
   idea: "#A89C8E",
@@ -17,6 +18,7 @@ const STATUS_COLORS: Record<IdeaStatus, string> = {
 };
 
 export default function IdeasPage() {
+  const apiFetch = useApiFetch();
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -24,17 +26,18 @@ export default function IdeasPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/ideas");
+    const res = await apiFetch("/api/ideas");
     const data = await res.json();
     setIdeas(data.filter((i: Idea) => i.status !== "verworfen"));
     setLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
   const moveIdea = async (id: string, status: IdeaStatus) => {
     setIdeas((prev) => prev.map((i) => i.id === id ? { ...i, status } : i));
-    await fetch(`/api/ideas/${id}`, {
+    await apiFetch(`/api/ideas/${id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
@@ -153,37 +156,61 @@ function IdeaCard({ idea, onDragStart }: { idea: Idea; onDragStart: (id: string)
   const firstArticle = idea.articles?.[0];
 
   return (
-    <Link href={firstArticle ? `/articles/${firstArticle.id}` : `/ideas/${idea.id}`}
-      style={{ textDecoration: "none" }}>
-      <div
-        draggable
-        onDragStart={() => onDragStart(idea.id)}
-        style={{
-          background: "#FDFAF6", border: "1px solid #E5DDD0", borderRadius: 7,
-          padding: "12px 12px 10px 12px", cursor: "grab",
-          transition: "box-shadow 0.15s",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)")}
-        onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
-      >
-        <div style={{ fontSize: 13, fontWeight: 600, color: "#1F1A13", lineHeight: 1.4, marginBottom: 6 }}>
-          {idea.title}
-        </div>
-        {idea.location && (
-          <div style={{ marginBottom: 6 }}>
-            <LocationCrumb location={idea.location as Location} />
+    <div style={{ position: "relative" }}>
+      <Link href={`/ideas/${idea.id}`} style={{ textDecoration: "none", display: "block" }}>
+        <div
+          draggable
+          onDragStart={() => onDragStart(idea.id)}
+          style={{
+            background: "#FDFAF6", borderRadius: 7,
+            border: firstArticle ? "1px solid #C8892E" : "1px solid #E5DDD0",
+            padding: "12px 12px 10px 12px", cursor: "grab",
+            transition: "box-shadow 0.15s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)")}
+          onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
+        >
+          {firstArticle && (
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#C8892E", letterSpacing: "0.07em",
+              textTransform: "uppercase", marginBottom: 6 }}>
+              ✦ Article
+            </div>
+          )}
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#1F1A13", lineHeight: 1.4, marginBottom: 6 }}>
+            {idea.title}
           </div>
-        )}
-        <div style={{ marginBottom: 8 }}>
-          <CategoryBadge category={idea.category as IdeaCategory} />
+          {idea.location && (
+            <div style={{ marginBottom: 6 }}>
+              <LocationCrumb location={idea.location as Location} />
+            </div>
+          )}
+          <div style={{ marginBottom: 8 }}>
+            <CategoryBadge category={idea.category as IdeaCategory} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 11, color: "#A89C8E" }}>
+              {idea.confirmationCount} source{idea.confirmationCount !== 1 ? "s" : ""}
+            </span>
+            <CredibilityBadge credibility={idea.credibility as import("@/lib/types").Credibility} />
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 11, color: "#A89C8E" }}>
-            {idea.confirmationCount} source{idea.confirmationCount !== 1 ? "s" : ""}
-          </span>
-          <CredibilityBadge credibility={idea.credibility as import("@/lib/types").Credibility} />
-        </div>
-      </div>
-    </Link>
+      </Link>
+
+      {firstArticle && (
+        <Link href={`/articles/${firstArticle.id}`}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+            marginTop: 3, padding: "4px 0", borderRadius: 5,
+            fontSize: 11, color: "#C8892E", textDecoration: "none",
+            background: "#FDF3E3", border: "1px solid #EDD9B0",
+          }}>
+          <svg width="10" height="10" viewBox="0 0 14 14" fill="none">
+            <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Open Article
+        </Link>
+      )}
+    </div>
   );
 }

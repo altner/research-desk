@@ -42,27 +42,27 @@ export function StatusBadge({ status }: { status: SourceStatus }) {
   );
 }
 
-const CATEGORY_COLORS: Record<IdeaCategory, { color: string; border: string }> = {
-  geheimtipp:             { color: "#2D7A77", border: "#2D7A77" },
-  warnung_abzocke:        { color: "#C8892E", border: "#C8892E" },
-  erwartung_vs_realitaet: { color: "#7B5EA7", border: "#7B5EA7" },
-  food_tipp:              { color: "#2D7A44", border: "#2D7A44" },
-  stimmungsbild:          { color: "#1E5C8A", border: "#1E5C8A" },
-  kultureller_fauxpas:    { color: "#C05C2B", border: "#C05C2B" },
-  praktischer_tipp:       { color: "#1E5C8A", border: "#1E5C8A" },
-  sonstige:               { color: "#7A6E61", border: "#C8BFB0" },
+const CATEGORY_COLORS_STATIC: Record<string, string> = {
+  geheimtipp: "#2D7A77", warnung_abzocke: "#C8892E", erwartung_vs_realitaet: "#7B5EA7",
+  food_tipp: "#2D7A44", stimmungsbild: "#1E5C8A", kultureller_fauxpas: "#C05C2B",
+  praktischer_tipp: "#1E5C8A", sonstige: "#7A6E61",
 };
 
-export function CategoryBadge({ category }: { category: IdeaCategory }) {
-  const c = CATEGORY_COLORS[category] ?? { color: "#7A6E61", border: "#C8BFB0" };
+export function CategoryBadge({ category, label, color }: {
+  category: string;
+  label?: string;
+  color?: string;
+}) {
+  const displayColor = color ?? CATEGORY_COLORS_STATIC[category] ?? "#7A6E61";
+  const displayLabel = label ?? CATEGORY_LABELS[category as IdeaCategory] ?? category;
   return (
     <span style={{
       display: "inline-block", padding: "2px 7px",
       fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
-      color: c.color, border: `1px solid ${c.border}`, borderRadius: 2,
+      color: displayColor, border: `1px solid ${displayColor}`, borderRadius: 2,
       textTransform: "uppercase",
     }}>
-      {CATEGORY_LABELS[category]}
+      {displayLabel}
     </span>
   );
 }

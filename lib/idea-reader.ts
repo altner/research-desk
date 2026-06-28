@@ -10,7 +10,7 @@ export interface IdeaForPrompt {
   category: string;
   summary: string;
   researchNotes: string | null;
-  confirmationCount: number;
+  confirmationCount: number; // computed from _count.ideaSources
   credibility: string;
   location: {
     id: string;
@@ -28,8 +28,8 @@ export async function readIdeaForPrompt(ideaId: string): Promise<IdeaForPrompt |
       category: true,
       summary: true,
       researchNotes: true,
-      confirmationCount: true,
       credibility: true,
+      _count: { select: { ideaSources: true } },
       location: {
         select: {
           id: true,
@@ -46,5 +46,6 @@ export async function readIdeaForPrompt(ideaId: string): Promise<IdeaForPrompt |
       // Explicitly no ideaSources join — rawText never loaded
     },
   });
-  return idea;
+  if (!idea) return null;
+  return { ...idea, confirmationCount: (idea as typeof idea & { _count: { ideaSources: number } })._count.ideaSources };
 }

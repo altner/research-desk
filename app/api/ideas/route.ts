@@ -6,8 +6,10 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get("status");
   const category = searchParams.get("category");
   const locationId = searchParams.get("locationId");
+  const projectId = req.headers.get("x-project-id");
 
   const where: Record<string, unknown> = {};
+  if (projectId) where.projectId = projectId;
   if (status) where.status = { not: "verworfen", ...(status !== "all" && { equals: status }) };
   if (category) where.category = category;
   if (locationId) where.locationId = locationId;
@@ -28,7 +30,8 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  return NextResponse.json(ideas);
+  const result = ideas.map((i) => ({ ...i, confirmationCount: i.ideaSources.length }));
+  return NextResponse.json(result);
 }
 
 export async function POST(req: NextRequest) {
@@ -39,6 +42,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "title, category, locationId required" }, { status: 400 });
   }
 
+  const projectId = req.headers.get("x-project-id");
   const idea = await prisma.idea.create({
     data: {
       title,
@@ -48,6 +52,7 @@ export async function POST(req: NextRequest) {
       credibility: credibility ?? "niedrig",
       researchNotes: researchNotes ?? null,
       status: "idea",
+      ...(projectId ? { projectId } : {}),
     },
     include: { location: true },
   });

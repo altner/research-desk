@@ -5,6 +5,7 @@ import { Button } from "@/components/ui";
 import type { IdeaCategory, Location, Idea } from "@/lib/types";
 import { CATEGORY_LABELS } from "@/lib/types";
 import LocationPicker from "@/components/LocationPicker";
+import { useApiFetch } from "@/lib/use-api-fetch";
 
 const CATEGORIES: IdeaCategory[] = [
   "geheimtipp", "warnung_abzocke", "erwartung_vs_realitaet", "food_tipp",
@@ -14,6 +15,7 @@ const CATEGORIES: IdeaCategory[] = [
 export default function IdeaLinkModal({
   sourceIds, onClose, onSaved,
 }: { sourceIds: string[]; onClose: () => void; onSaved: () => void }) {
+  const apiFetch = useApiFetch();
   const [mode, setMode] = useState<"new" | "existing">("new");
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [selectedIdeaId, setSelectedIdeaId] = useState("");
@@ -26,8 +28,9 @@ export default function IdeaLinkModal({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/locations?flat=true").then((r) => r.json()).then(setLocations);
-    fetch("/api/ideas").then((r) => r.json()).then(setIdeas);
+    apiFetch("/api/locations?flat=true").then((r) => r.json()).then(setLocations);
+    apiFetch("/api/ideas").then((r) => r.json()).then(setIdeas);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const save = async () => {
@@ -49,7 +52,7 @@ export default function IdeaLinkModal({
       return;
     }
 
-    const res = await fetch("/api/sources/bulk-link-idea", {
+    const res = await apiFetch("/api/sources/bulk-link-idea", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });

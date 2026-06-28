@@ -27,9 +27,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   await prisma.source.update({ where: { id }, data: { status: "linked_to_idea" } });
 
-  // Update confirmationCount
-  const count = await prisma.ideaSource.count({ where: { ideaId: targetIdeaId } });
-  await prisma.idea.update({ where: { id: targetIdeaId }, data: { confirmationCount: count } });
-
   return NextResponse.json({ ideaId: targetIdeaId });
 }

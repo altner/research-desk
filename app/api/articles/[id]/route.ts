@@ -9,8 +9,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       location: { include: { parent: { include: { parent: true } } } },
       idea: {
         select: {
-          id: true, title: true, category: true, confirmationCount: true,
+          id: true, title: true, category: true,
           credibility: true, summary: true, researchNotes: true,
+          _count: { select: { ideaSources: true } },
+          ideaSources: {
+            include: { source: { select: { id: true, platform: true, url: true, rawText: true, capturedAt: true } } },
+          },
         },
       },
       draftGenerations: { orderBy: { createdAt: "desc" }, take: 5 },

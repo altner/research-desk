@@ -4,17 +4,15 @@ import { useEffect, useState } from "react";
 import { use } from "react";
 import { CategoryBadge, LocationCrumb, CredibilityBadge, PlatformBadge, Button } from "@/components/ui";
 import type { Idea, IdeaCategory, Location, Platform, Credibility, IdeaStatus } from "@/lib/types";
-import { CATEGORY_LABELS, CREDIBILITY_LABELS, IDEA_STATUS_LABELS } from "@/lib/types";
+import { CREDIBILITY_LABELS, IDEA_STATUS_LABELS } from "@/lib/types";
 import { useRouter } from "next/navigation";
+import { useCategories } from "@/lib/use-categories";
 
-const CATEGORIES: IdeaCategory[] = [
-  "geheimtipp", "warnung_abzocke", "erwartung_vs_realitaet", "food_tipp",
-  "stimmungsbild", "kultureller_fauxpas", "praktischer_tipp", "sonstige",
-];
 const CREDIBILITIES: Credibility[] = ["niedrig", "mittel", "hoch", "bestaetigt"];
 
 export default function IdeaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { labelFor, colorFor } = useCategories();
   const [idea, setIdea] = useState<Idea | null>(null);
   const [edit, setEdit] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -65,10 +63,22 @@ export default function IdeaDetailPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div style={{ padding: 28, maxWidth: 720, overflow: "auto", height: "100%" }}>
+      <button onClick={() => window.history.back()} style={{
+        background: "none", border: "none", cursor: "pointer", color: "#7A6E61",
+        display: "flex", alignItems: "center", gap: 4, fontSize: 12, padding: "4px 6px",
+        borderRadius: 5, marginBottom: 16,
+      }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "#DDD6C8")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "none")}>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        Back
+      </button>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <div style={{ marginBottom: 8 }}>
-            <CategoryBadge category={idea.category as IdeaCategory} />
+            <CategoryBadge category={idea.category} label={labelFor(idea.category)} color={colorFor(idea.category)} />
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1F1A13", lineHeight: 1.3 }}>{idea.title}</h1>
           {idea.location && (
@@ -187,10 +197,11 @@ export default function IdeaDetailPage({ params }: { params: Promise<{ id: strin
 function EditIdeaForm({ idea, onSave, onCancel }: {
   idea: Idea; onSave: (updates: Partial<Idea>) => Promise<void>; onCancel: () => void;
 }) {
+  const { categories } = useCategories();
   const [title, setTitle] = useState(idea.title);
   const [summary, setSummary] = useState(idea.summary);
   const [researchNotes, setResearchNotes] = useState(idea.researchNotes ?? "");
-  const [category, setCategory] = useState<IdeaCategory>(idea.category as IdeaCategory);
+  const [category, setCategory] = useState<string>(idea.category);
   const [credibility, setCredibility] = useState<Credibility>(idea.credibility as Credibility);
 
   return (
@@ -203,15 +214,15 @@ function EditIdeaForm({ idea, onSave, onCancel }: {
       <div style={{ marginBottom: 12 }}>
         <label style={labelStyle}>Category</label>
         <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 5 }}>
-          {CATEGORIES.map((c) => (
-            <button key={c} onClick={() => setCategory(c)} style={{
+          {categories.map((c) => (
+            <button key={c.key} onClick={() => setCategory(c.key)} style={{
               padding: "3px 9px", borderRadius: 4, cursor: "pointer", fontSize: 11, fontWeight: 700,
               border: "1px solid",
-              ...(category === c
+              ...(category === c.key
                 ? { background: "#C8892E", color: "#fff", borderColor: "#C8892E" }
                 : { background: "#FDFAF6", color: "#7A6E61", borderColor: "#D8CFBF" }),
             }}>
-              {CATEGORY_LABELS[c]}
+              {c.labelDe}
             </button>
           ))}
         </div>
@@ -244,7 +255,7 @@ function EditIdeaForm({ idea, onSave, onCancel }: {
           placeholder="Your own notes for AI generation (no original verbatim text) ..." />
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        <Button onClick={() => onSave({ title, summary, category, credibility, researchNotes: researchNotes || null })}>
+        <Button onClick={() => onSave({ title, summary, category: category as IdeaCategory, credibility, researchNotes: researchNotes || null })}>
           Save
         </Button>
         <Button variant="secondary" onClick={onCancel}>Cancel</Button>

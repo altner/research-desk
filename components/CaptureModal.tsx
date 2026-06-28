@@ -5,6 +5,7 @@ import { Button, CategoryBadge } from "@/components/ui";
 import type { Platform, IdeaCategory, Location } from "@/lib/types";
 import { PLATFORM_LABELS, CATEGORY_LABELS } from "@/lib/types";
 import LocationPicker from "@/components/LocationPicker";
+import { useApiFetch } from "@/lib/use-api-fetch";
 
 const PLATFORMS: Platform[] = ["reddit", "tiktok", "instagram", "facebook", "youtube", "forum", "other"];
 const CATEGORIES: IdeaCategory[] = [
@@ -13,6 +14,7 @@ const CATEGORIES: IdeaCategory[] = [
 ];
 
 export default function CaptureModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const apiFetch = useApiFetch();
   const [url, setUrl] = useState("");
   const [platform, setPlatform] = useState<Platform>("reddit");
   const [rawText, setRawText] = useState("");
@@ -26,7 +28,8 @@ export default function CaptureModal({ onClose, onSaved }: { onClose: () => void
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/locations?flat=true").then((r) => r.json()).then(setLocations);
+    apiFetch("/api/locations?flat=true").then((r) => r.json()).then(setLocations);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const save = async () => {
@@ -35,7 +38,7 @@ export default function CaptureModal({ onClose, onSaved }: { onClose: () => void
     if (createIdea && !locationId) { setError("Topic area is required when creating an idea"); return; }
     setSaving(true);
     setError("");
-    const res = await fetch("/api/capture", {
+    const res = await apiFetch("/api/capture", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

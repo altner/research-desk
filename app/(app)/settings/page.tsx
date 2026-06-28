@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui";
 import type { PromptTemplate, LocationType } from "@/lib/types";
 import { LOCATION_TYPE_LABELS } from "@/lib/types";
+import { useApiFetch } from "@/lib/use-api-fetch";
 
 // ─── Shared styles ───────────────────────────────────────────────────────────
 
@@ -46,12 +47,13 @@ interface LocationFlat {
 // ─── Settings page ────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<"templates" | "locations">("templates");
+  const apiFetch = useApiFetch();
+  const [activeTab, setActiveTab] = useState<"templates" | "locations" | "categories">("templates");
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
 
   const loadTemplates = useCallback(() =>
-    fetch("/api/templates").then((r) => r.json()).then(setTemplates), []);
+    apiFetch("/api/templates").then((r) => r.json()).then(setTemplates), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { loadTemplates(); }, [loadTemplates]);
 
@@ -60,12 +62,12 @@ export default function SettingsPage() {
 
   const save = async (data: Partial<PromptTemplate> & { id?: string }) => {
     if (data.id) {
-      await fetch(`/api/templates/${data.id}`, {
+      await apiFetch(`/api/templates/${data.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
     } else {
-      await fetch("/api/templates", {
+      await apiFetch("/api/templates", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
@@ -75,7 +77,7 @@ export default function SettingsPage() {
   };
 
   const setDefault = async (id: string) => {
-    await fetch(`/api/templates/${id}`, {
+    await apiFetch(`/api/templates/${id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isDefault: true }),
     });
@@ -84,13 +86,14 @@ export default function SettingsPage() {
 
   const del = async (id: string) => {
     if (!confirm("Delete this template?")) return;
-    await fetch(`/api/templates/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/templates/${id}`, { method: "DELETE" });
     await loadTemplates();
   };
 
-  const TABS: { key: "templates" | "locations"; label: string }[] = [
+  const TABS: { key: "templates" | "locations" | "categories"; label: string }[] = [
     { key: "templates", label: "Prompt Templates" },
     { key: "locations", label: "Topic Areas" },
+    { key: "categories", label: "Categories" },
   ];
 
   return (
@@ -125,6 +128,7 @@ export default function SettingsPage() {
         {activeTab === "templates" && (
           <Button onClick={startNew} disabled={editingId !== null}>+ New Template</Button>
         )}
+        {activeTab === "categories" && <span />}
       </div>
 
       {/* Templates tab */}
@@ -181,6 +185,9 @@ export default function SettingsPage() {
       {activeTab === "locations" && (
         <LocationsTab templates={templates} onTemplatesChange={loadTemplates} />
       )}
+
+      {/* Categories tab */}
+      {activeTab === "categories" && <CategoriesTab />}
     </div>
   );
 }
@@ -335,6 +342,7 @@ function LocationsTab({ templates, onTemplatesChange }: {
   templates: PromptTemplate[];
   onTemplatesChange: () => Promise<void>;
 }) {
+  const apiFetch = useApiFetch();
   const [locations, setLocations] = useState<LocationFlat[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
@@ -342,7 +350,7 @@ function LocationsTab({ templates, onTemplatesChange }: {
   const [deleteError, setDeleteError] = useState<Record<string, string>>({});
 
   const loadLocations = useCallback(async () => {
-    const data = await fetch("/api/locations?flat=true").then((r) => r.json());
+    const data = await apiFetch("/api/locations?flat=true").then((r) => r.json());
     setLocations(data);
     // Auto-expand countries on first load
     if (expanded.size === 0) {
@@ -375,17 +383,15 @@ function LocationsTab({ templates, onTemplatesChange }: {
   }
 
   const assignTemplate = async (locId: string, templateId: string | "") => {
-    // Remove old assignment for this location if any
     const prev = templateByLocation.get(locId);
     if (prev) {
-      await fetch(`/api/templates/${prev.id}`, {
+      await apiFetch(`/api/templates/${prev.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ locationId: null }),
       });
     }
-    // Set new assignment
     if (templateId) {
-      await fetch(`/api/templates/${templateId}`, {
+      await apiFetch(`/api/templates/${templateId}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ locationId: locId }),
       });
@@ -396,7 +402,7 @@ function LocationsTab({ templates, onTemplatesChange }: {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this location?")) return;
     setDeleteError((e) => { const n = { ...e }; delete n[id]; return n; });
-    const res = await fetch(`/api/locations/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`/api/locations/${id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json();
       setDeleteError((e) => ({ ...e, [id]: data.error ?? "Delete failed" }));
@@ -411,12 +417,12 @@ function LocationsTab({ templates, onTemplatesChange }: {
     id?: string;
   }) => {
     if (data.id) {
-      await fetch(`/api/locations/${data.id}`, {
+      await apiFetch(`/api/locations/${data.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nameDe: data.nameDe, nameEn: data.nameEn, nameTh: data.nameTh }),
       });
     } else {
-      const res = await fetch("/api/locations", {
+      const res = await apiFetch("/api/locations", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: data.type, nameDe: data.nameDe, nameEn: data.nameEn,
@@ -688,6 +694,156 @@ function LocationForm({ initial, parentId, parentName, onSave, onCancel }: {
           borderRadius: 5, fontSize: 13, marginBottom: 10 }}>{error}</div>
       )}
 
+      <div style={{ display: "flex", gap: 8 }}>
+        <Button onClick={submit}>Save</Button>
+        <Button variant="secondary" onClick={onCancel}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Categories tab ────────────────────────────────────────────────────────────
+
+interface CategoryRow { id: string; key: string; labelDe: string; color: string }
+
+function CategoriesTab() {
+  const apiFetch = useApiFetch();
+  const [cats, setCats] = useState<CategoryRow[]>([]);
+  const [editingId, setEditingId] = useState<string | "new" | null>(null);
+
+  const load = useCallback(async () => {
+    const data = await apiFetch("/api/categories").then((r) => r.json());
+    setCats(data);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { load(); }, [load]);
+
+  const del = async (id: string) => {
+    if (!confirm("Delete this category? Existing ideas using it keep the key but the label won't resolve.")) return;
+    await apiFetch(`/api/categories/${id}`, { method: "DELETE" });
+    await load();
+    if (editingId === id) setEditingId(null);
+  };
+
+  const save = async (data: { key?: string; labelDe: string; color: string; id?: string }) => {
+    if (data.id) {
+      await apiFetch(`/api/categories/${data.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ labelDe: data.labelDe, color: data.color }),
+      });
+    } else {
+      await apiFetch("/api/categories", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: data.key, labelDe: data.labelDe, color: data.color }),
+      });
+    }
+    await load();
+    setEditingId(null);
+  };
+
+  return (
+    <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, maxWidth: 700 }}>
+        <Button onClick={() => setEditingId("new")} disabled={editingId !== null}>+ New Category</Button>
+        <span style={{ fontSize: 12, color: "#A89C8E" }}>{cats.length} categories</span>
+      </div>
+
+      {editingId === "new" && (
+        <div style={{ maxWidth: 700, marginBottom: 16 }}>
+          <CategoryForm onSave={(d) => save(d)} onCancel={() => setEditingId(null)} />
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 700 }}>
+        {cats.map((cat) =>
+          editingId === cat.id ? (
+            <CategoryForm
+              key={cat.id}
+              initial={cat}
+              onSave={(d) => save({ ...d, id: cat.id })}
+              onCancel={() => setEditingId(null)}
+            />
+          ) : (
+            <div key={cat.id} style={{
+              display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+              background: "#FDFAF6", border: "1px solid #E5DDD0", borderRadius: 7,
+            }}>
+              <span style={{
+                width: 14, height: 14, borderRadius: "50%",
+                background: cat.color, flexShrink: 0,
+                border: "1px solid rgba(0,0,0,0.12)",
+              }} />
+              <span style={{
+                fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+                color: cat.color, border: `1px solid ${cat.color}`,
+                padding: "1px 6px", borderRadius: 2, textTransform: "uppercase",
+              }}>{cat.labelDe}</span>
+              <code style={{
+                fontSize: 11, color: "#A89C8E", background: "#EBE5D9",
+                padding: "1px 6px", borderRadius: 3, flex: 1,
+              }}>{cat.key}</code>
+              <div style={{ display: "flex", gap: 6 }}>
+                <Button variant="secondary" size="sm" onClick={() => setEditingId(cat.id)}>Edit</Button>
+                <Button variant="danger" size="sm" onClick={() => del(cat.id)}>Delete</Button>
+              </div>
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CategoryForm({ initial, onSave, onCancel }: {
+  initial?: CategoryRow;
+  onSave: (data: { key?: string; labelDe: string; color: string }) => void;
+  onCancel: () => void;
+}) {
+  const [key, setKey] = useState(initial?.key ?? "");
+  const [labelDe, setLabelDe] = useState(initial?.labelDe ?? "");
+  const [color, setColor] = useState(initial?.color ?? "#7B5EA7");
+  const [error, setError] = useState("");
+
+  const submit = () => {
+    if (!labelDe.trim()) { setError("Label is required"); return; }
+    if (!initial && !key.trim()) { setError("Key is required"); return; }
+    onSave({ key: initial ? undefined : key.trim().toLowerCase().replace(/\s+/g, "_"), labelDe, color });
+  };
+
+  return (
+    <div style={{
+      background: "#FDFAF6", border: "2px solid #C8892E", borderRadius: 8, padding: "16px 18px",
+    }}>
+      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14, color: "#1F1A13" }}>
+        {initial ? "Edit Category" : "New Category"}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, marginBottom: 12 }}>
+        {!initial && (
+          <div>
+            <label style={labelStyle}>Key *</label>
+            <input value={key} onChange={(e) => setKey(e.target.value)} style={inputStyle}
+              placeholder="e.g. geheimtipp" />
+          </div>
+        )}
+        <div style={initial ? { gridColumn: "1 / 3" } : {}}>
+          <label style={labelStyle}>Label (DE) *</label>
+          <input value={labelDe} onChange={(e) => setLabelDe(e.target.value)} style={inputStyle}
+            placeholder="e.g. Geheimtipp" />
+        </div>
+        <div>
+          <label style={labelStyle}>Color</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+            <input type="color" value={color} onChange={(e) => setColor(e.target.value)}
+              style={{ width: 36, height: 34, border: "1px solid #D8CFBF", borderRadius: 4,
+                cursor: "pointer", padding: 2, background: "#F4EFE6" }} />
+            <span style={{ fontSize: 11, color: "#A89C8E", fontFamily: "monospace" }}>{color}</span>
+          </div>
+        </div>
+      </div>
+      {error && (
+        <div style={{ background: "#FDECEA", color: "#C0392B", padding: "8px 12px",
+          borderRadius: 5, fontSize: 13, marginBottom: 10 }}>{error}</div>
+      )}
       <div style={{ display: "flex", gap: 8 }}>
         <Button onClick={submit}>Save</Button>
         <Button variant="secondary" onClick={onCancel}>Cancel</Button>

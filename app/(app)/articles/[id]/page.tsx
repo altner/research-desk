@@ -1,8 +1,8 @@
 "use client";
 
 import { use, useEffect, useState, useRef } from "react";
-import { LocationCrumb, CredibilityBadge, Button } from "@/components/ui";
-import type { Article, Location, Credibility } from "@/lib/types";
+import { LocationCrumb, CredibilityBadge, Button, PlatformBadge } from "@/components/ui";
+import type { Article, Location, Credibility, Platform } from "@/lib/types";
 
 type PublishStatus = "draft" | "in_review" | "published";
 
@@ -85,6 +85,18 @@ export default function ArtikelEditorPage({ params }: { params: Promise<{ id: st
         padding: "0 16px", height: 52, display: "flex", alignItems: "center", gap: 12,
         borderBottom: "1px solid #D8CFBF", background: "#EBE5D9", flexShrink: 0,
       }}>
+        <button onClick={() => window.history.back()} style={{
+          background: "none", border: "none", cursor: "pointer", color: "#7A6E61",
+          display: "flex", alignItems: "center", gap: 4, fontSize: 12, padding: "4px 6px",
+          borderRadius: 5, flexShrink: 0,
+        }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#DDD6C8")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Back
+        </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#1F1A13", truncate: true } as React.CSSProperties}>
             {article.title}
@@ -92,7 +104,7 @@ export default function ArtikelEditorPage({ params }: { params: Promise<{ id: st
           <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: "#A89C8E" }}>
             {article.location && <LocationCrumb location={article.location as Location} />}
             <span>·</span>
-            <span>{(article as Article & { idea?: { confirmationCount: number; credibility: string } }).idea?.confirmationCount ?? 0} sources</span>
+            <span>{(article as Article & { idea?: { _count?: { ideaSources: number } } }).idea?._count?.ideaSources ?? 0} sources</span>
             <span>·</span>
             <span>Last edited {new Date(article.updatedAt).toLocaleDateString("en-US")}</span>
           </div>
@@ -217,7 +229,7 @@ export default function ArtikelEditorPage({ params }: { params: Promise<{ id: st
           )}
         </div>
 
-        {/* Preview */}
+        {/* Preview + Sources */}
         <div style={{ flex: 1, overflow: "auto", background: "#FDFAF6" }}>
           <div style={{ padding: "16px 24px 32px" }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: "#A89C8E", letterSpacing: "0.1em",
@@ -225,6 +237,45 @@ export default function ArtikelEditorPage({ params }: { params: Promise<{ id: st
               Preview
             </div>
             <MarkdownPreview markdown={body} />
+
+            {/* Linked Sources */}
+            {(() => {
+              const sources = (article as Article & {
+                idea?: { ideaSources?: { source: { id: string; platform: string; url: string; rawText: string | null; capturedAt: string } }[] }
+              }).idea?.ideaSources;
+              if (!sources?.length) return null;
+              return (
+                <div style={{ marginTop: 32, borderTop: "1px solid #E0D8C8", paddingTop: 20 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#A89C8E", letterSpacing: "0.1em",
+                    textTransform: "uppercase", marginBottom: 12 }}>
+                    Linked Sources ({sources.length})
+                  </div>
+                  {sources.map(({ source }) => (
+                    <div key={source.id} style={{
+                      background: "#F4EFE6", border: "1px solid #E0D8C8", borderRadius: 6,
+                      padding: "10px 12px", marginBottom: 8,
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: source.rawText ? 6 : 0 }}>
+                        <PlatformBadge platform={source.platform as Platform} />
+                        <a href={source.url} target="_blank" rel="noreferrer"
+                          style={{ fontSize: 12, color: "#C8892E", wordBreak: "break-all", flex: 1 }}>
+                          {source.url.slice(0, 80)}{source.url.length > 80 ? "…" : ""}
+                        </a>
+                        <span style={{ fontSize: 11, color: "#A89C8E", flexShrink: 0 }}>
+                          {new Date(source.capturedAt).toLocaleDateString("en-US")}
+                        </span>
+                      </div>
+                      {source.rawText && (
+                        <div style={{ fontSize: 12, color: "#7A6E61", lineHeight: 1.5,
+                          paddingLeft: 4, borderLeft: "2px solid #D8CFBF", marginLeft: 2 }}>
+                          {source.rawText.slice(0, 200)}{source.rawText.length > 200 ? "…" : ""}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

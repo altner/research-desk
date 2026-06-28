@@ -35,6 +35,15 @@ export const LOCATION_TYPE_LABELS: Record<LocationType, string> = {
   other_poi: "Other POI",
 };
 
+export interface Project {
+  id: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { sources: number; ideas: number; articles: number };
+}
+
 export interface PromptTemplate {
   id: string;
   name: string;
@@ -57,10 +66,12 @@ export interface Location {
   nameEn: string;
   nameTh: string | null;
   slug: string;
+  projectId?: string;
 }
 
 export interface Source {
   id: string;
+  projectId: string;
   platform: Platform;
   url: string;
   urlNormalized: string;
@@ -76,12 +87,14 @@ export interface Source {
   locationGuess?: Location | null;
   locationId: string | null;
   location?: Location | null;
+  folderId?: string | null;
   ideaSources?: Array<{ idea: Idea }>;
   _duplicateOf?: string | null;
 }
 
 export interface Idea {
   id: string;
+  projectId: string;
   title: string;
   category: IdeaCategory;
   summary: string;
@@ -99,6 +112,7 @@ export interface Idea {
 
 export interface Article {
   id: string;
+  projectId: string;
   ideaId: string;
   idea?: Pick<Idea, "id" | "title" | "category" | "confirmationCount" | "credibility">;
   locationId: string;

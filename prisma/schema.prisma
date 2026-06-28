@@ -6,6 +6,41 @@ datasource db {
   provider = "sqlite"
 }
 
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sources         Source[]
+  ideas           Idea[]
+  articles        Article[]
+  promptTemplates PromptTemplate[]
+  locations       Location[]
+  folders         Folder[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  labelDe   String
+  color     String   @default("#7B5EA7")
+  createdAt DateTime @default(now())
+}
+
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  parentId  String?
+  parent    Folder?  @relation("FolderTree", fields: [parentId], references: [id])
+  children  Folder[] @relation("FolderTree")
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sources   Source[]
+  createdAt DateTime @default(now())
+}
+
 model Location {
   id       String       @id @default(cuid())
   type     String
@@ -16,6 +51,9 @@ model Location {
   nameEn   String
   nameTh   String?
   slug     String       @unique
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   sources          Source[]
   sourceGuesses    Source[] @relation("LocationGuess")
@@ -34,6 +72,12 @@ model Source {
   capturedAt       DateTime @default(now())
   originalPostedAt DateTime?
   status           String   @default("new")
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  folderId String?
+  folder   Folder? @relation(fields: [folderId], references: [id])
 
   originSourceId String?
   originSource   Source?  @relation("SourceTree", fields: [originSourceId], references: [id])
@@ -66,6 +110,9 @@ model Idea {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   ideaSources IdeaSource[]
   articles    Article[]
 }
@@ -94,6 +141,9 @@ model Article {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   draftGenerations ArticleDraftGeneration[]
 }
 
@@ -119,6 +169,9 @@ model PromptTemplate {
   location    Location? @relation("LocationTemplates", fields: [locationId], references: [id])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   draftGenerations ArticleDraftGeneration[]
 }

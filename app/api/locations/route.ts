@@ -8,9 +8,11 @@ export async function GET(req: NextRequest) {
   const parentId = searchParams.get("parentId");
   const flat = searchParams.get("flat") === "true";
 
+  const projectId = req.headers.get("x-project-id");
   if (flat) {
     const locations = await prisma.location.findMany({
       where: {
+        ...(projectId ? { projectId } : {}),
         ...(type ? { type } : {}),
       },
       orderBy: [{ type: "asc" }, { nameDe: "asc" }],
@@ -25,6 +27,7 @@ export async function GET(req: NextRequest) {
 
   const locations = await prisma.location.findMany({
     where: {
+      ...(projectId ? { projectId } : {}),
       ...(type ? { type } : { type: "country" }),
       ...(parentId ? { parentId } : {}),
     },
@@ -48,9 +51,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "type, nameDe, nameEn, slug required" }, { status: 400 });
   }
 
+  const projectId = req.headers.get("x-project-id");
+  if (!projectId) {
+    return NextResponse.json({ error: "x-project-id header required" }, { status: 400 });
+  }
   try {
     const location = await prisma.location.create({
-      data: { type, nameDe, nameEn, nameTh: nameTh ?? null, slug, parentId: parentId ?? null },
+      data: {
+        type, nameDe, nameEn, nameTh: nameTh ?? null, slug, parentId: parentId ?? null,
+        projectId,
+      },
     });
     return NextResponse.json(location, { status: 201 });
   } catch (e) {

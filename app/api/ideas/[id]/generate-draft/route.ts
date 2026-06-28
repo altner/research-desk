@@ -113,16 +113,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .join("");
 
   // Upsert article
+  const ideaRow = await prisma.idea.findUnique({ where: { id: ideaId }, select: { locationId: true, projectId: true } });
+  if (!ideaRow?.projectId) return NextResponse.json({ error: "Idea has no projectId" }, { status: 400 });
   let article = await prisma.article.findFirst({ where: { ideaId } });
   if (!article) {
     article = await prisma.article.create({
       data: {
         ideaId,
-        locationId: (await prisma.idea.findUnique({ where: { id: ideaId }, select: { locationId: true } }))!.locationId,
+        locationId: ideaRow.locationId,
         title: idea.title,
         bodyMarkdown: modelOutput,
         generationSource: "ai_draft_human_edited",
         publishStatus: "draft",
+        projectId: ideaRow.projectId,
       },
     });
   } else {

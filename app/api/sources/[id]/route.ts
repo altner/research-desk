@@ -15,7 +15,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         include: { location: true },
         orderBy: { capturedAt: "asc" },
       },
-      ideaSources: { include: { idea: { include: { location: true } } } },
+      ideaSources: { include: { idea: { include: { location: true, articles: { select: { id: true, title: true, publishStatus: true } } } } } },
       mergedInto: { select: { id: true, url: true, platform: true } },
       mergedFrom: { select: { id: true, url: true, platform: true, rawText: true } },
     },
@@ -27,7 +27,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await req.json();
-  const { status, locationId, locationGuessId, rawText, originalPostedAt } = body;
+  const { status, locationId, locationGuessId, rawText, originalPostedAt, url, platform, folderId } = body;
+
+  if (status === "new" || status === "reviewed") {
+    await prisma.ideaSource.deleteMany({ where: { sourceId: id } });
+  }
 
   const source = await prisma.source.update({
     where: { id },
@@ -37,6 +41,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(locationGuessId !== undefined && { locationGuessId }),
       ...(rawText !== undefined && { rawText }),
       ...(originalPostedAt !== undefined && { originalPostedAt: new Date(originalPostedAt) }),
+      ...(url !== undefined && { url }),
+      ...(platform !== undefined && { platform }),
+      ...(folderId !== undefined && { folderId: folderId || null }),
     },
     include: { location: true },
   });
